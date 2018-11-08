@@ -1,10 +1,9 @@
 Within this directory are the following folders:
 
 /data_FORWEB:
-  Quality controlled, infilled hourly meteorological data from 1991 to 2013 (nwt_meteo_hrly_1990_2013_c1_sdl_d1_v2.csv)
-  For stations: C1, Saddle, D1
-  Metadata that details QC, infilling procedure (NWT_metadata_form_meteo_hrly_1990_2013_c1_sdl_d1_v2.xlsx)
-
+  Quality controlled, infilled hourly meteorological data from 1991 to 2013 for stations: C1, Saddle, D1
+  Metadata that details QC, infilling procedure
+  
 /data_raw
   Raw data for C1, Saddle, D1
   Individual CSVs
