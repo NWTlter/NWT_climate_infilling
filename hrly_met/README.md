@@ -4,9 +4,8 @@ Within this directory are the following folders:
   Quality controlled, infilled hourly meteorological data from 1991 to 2013 for stations: C1, Saddle, D1
   Metadata that details QC, infilling procedure
   
-/data_raw
-  Raw data for C1, Saddle, D1
-  Individual CSVs
+/workflows
+  Workflow documents and notes for general procedures and site-by-site info
 
 /r_code
   All scripts used to aggregate, QC, and infill the met data
