@@ -146,10 +146,10 @@ prepCSU <- function(dat){
 # function to read in Ameriflux data for sites at/near NWT (static file read-in)
 # > for dynamic read in, use amerifluxr package (CTW slightly prefers more control with static file read in to amerifluxr package)
 
-getAmeriflux <- function(datpath){
+getAmeriflux <- function(fluxpath){
   
   # id unzipped folders that have ameriflux data
-  fluxfolders <- list.dirs(datpath, full.names = T)
+  fluxfolders <- list.dirs(fluxpath, full.names = T)
   # grab AMF folders only
   fluxfolders <- fluxfolders[grep("AMF", fluxfolders)]
   # grab .csv files within each folder
