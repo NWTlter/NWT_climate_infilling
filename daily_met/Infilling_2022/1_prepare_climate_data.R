@@ -1,103 +1,88 @@
-#' ---
-#' title: Prepare temperature data 
-#' author: CTW  
-#' date: "`r format(Sys.Date())`"
-#' output: github_document
-#' ---
-#' 
-#' ### Prepare temperature data 
-#' 
-#' Test report to:
-#' 1. Read in NWT and neighbor station temperature datasets
-#' 2. Show raw data (removing any infilled or flagged data that we wish to ignore for processing)
-#' 3. Show datasets prepared for QC procedure
-#' 
-#' All code will be displayed to show procedure and work out bugs
-#TODO Find this in the script... 
+# ------------------------------------------------------------
+# Title: Prepare Temperature Data
+# Author: CTW
+# Changelog : 
+#   10/2023 - MM Edited for clarity, adjusted for _as_ sensors to be a source. Goal
+#       of clarity edits was just to make this a little easier for NWT IM dept to run
+#       each year moving forward.
+# ------------------------------------------------------------
+rm(list=ls())
+### Description:
+# This script is intended to:
+# 1. Import temperature & PPT datasets from NWT and neighboring stations.
+# 2. Filter and display raw data, excluding infilled or flagged data.
+# 3. Prepare datasets for QC (Quality Control) procedures.
+# The script displays all code to demonstrate the process and identify potential issues.
+
+# Set working directory
 setwd("~/NWTLTER/NWT_climate_infilling/")
-# -- SETUP -----
-# libraries needed
+
+# Load required libraries
 library(tidyverse)
 library(lubridate)
 
-# source scripts (this will change for package)
-source("daily_met/R/fetch_data_functions.R")
-source("daily_met/R/prep_data_functions.R")
-source("daily_met/R/dataviz_functions.R")
-source("daily_met/R/common_qaqc_functions.R")
+# Source helper scripts
+script_paths <- c("daily_met/R/fetch_data_functions.R",
+                  "daily_met/R/prep_data_functions.R",
+                  "daily_met/R/dataviz_functions.R",
+                  "daily_met/R/common_qaqc_functions.R")
+lapply(script_paths, source)
 
-# specify path to data directory (can be wherever, but raw input files should live in data/raw)
+# Define data paths
 datpath <- "~/OneDrive - UCB-O365/nwt_climate/data/"
 fluxpath <- "~/OneDrive - UCB-O365/nwt_climate/data/raw/AmeriFlux/"
 ghcndpath <- "~/OneDrive - UCB-O365/nwt_climate/data/raw/GHCNd/"
 
-view_plots <- FALSE  # Should the script automatically print all plots?
+# Toggle for plot display
+view_plots <- TRUE # If you just need to rerun quickly, FALSE will skip plotting
 
-# create subfolders for data out if they don't exist
-for(i in c("prep", "qc", "infill", "homogenize")){
-  if(!i %in% list.files(datpath)){
-    dir.create(paste0(datpath, i))
+# Create necessary subdirectories if they don't exist.
+create_subfolders <- function(datpath, subfolders) {
+  for (folder in subfolders) {
+    folder_path <- paste0(datpath, folder)
+    if (!dir.exists(folder_path)) {
+      dir.create(folder_path)
+    }
   }
-  rm(i) # clean up environment
 }
+create_subfolders(datpath, c("prep", "qc", "infill", "homogenize"))
 
-# other way to write
-sapply(list("qc", "infill", "homogenize"), function(x) 
-  if(!x %in% list.files(datpath)){
-    dir.create(paste0(datpath, x))
-  }
-)
-
-# read in dynamic datasets
+# Read in dynamic datasets
 snotel <- getSnotelNeighbors()
 nwtchart <- getNWTcharts()
 nwtchart_infilled <- getNWTchartsinfilled()
 nwtlogger <- getNWTdailyloggers()
-tvan <- getTabular(2) # J Knowles infilled tvan tower data, does not note which values were infilled but data complete for all timesteps, can perhaps determine infilled values using ameriflux tvan data
-
+tvan <- getTabular(2) 
+# ^J Knowles infilled tvan tower data, does not note which values were infilled 
+# but data complete for all timesteps, can perhaps determine infilled values 
+# using ameriflux tvan data
 
 # read in static/downloaded datasets 
 ameriflux <- getAmeriflux(fluxpath)
 ghcnd <- getGHCND(ghcndpath)
 
-#' This workflow assumes the data user gave thought to choosing which data stations to use for comparative data QC and infilling
-#' For example, stations that have precedent (were used for previously infilling NWT climate data in peer-reviewed publications)
-#' Or stations that may have emerged or increased in quality since past infilling efforts
-#' This workflow also assumes the data user is reading in as-is data and will need to review each dataset to both get a basic understanding of what is in the data and potential issues in each
-
-#' Every potential data source (e.g., NWT, Snotel, Ameriflex, NOAA GHCNd, etc.) has their own data structure, units, naming conventions, data QAQC (flagging may exist fully, partially, or not at all), and metadata guidance
-#' It is up to the data user to read documentation for each data source before starting the workflow for responsible data use and to understand ramifications and possible biases of using different datasets 
-
-#' Because of the number of sites involved and time/memory use constraints, it may make more sense to separate data prep for each source into its own script/markdown
-#' We should prep for all stations here for illustration.
-
-
-
 
 # -- SCREEN AND SELECT DATA -----
 
+# 1. NWT stations -----
+#' Screen chart data (target infilling for basic issues, especially for newer data to QC and infill), but ultimately will be appending newly treated data to existing infilled dataset
+#' Also want to screen electronic logger and other NWT climate data source (e.g., sensor array may become an option with more time and data collected)
+#' While logger data are available hourly, here we are only interested in daily logger data
 
-#' # 1. NWT stations -----
-#' #' Screen chart data (target infilling for basic issues, especially for newer data to QC and infill), but ultimately will be appending newly treated data to existing infilled dataset
-#' #' Also want to screen electronic logger and other NWT climate data source (e.g., sensor array may become an option with more time and data collected)
-#' #' While logger data are available hourly, here we are only interested in daily logger data
-#' 
-#' # 1.1. NWT climate daily chart -----
-#' # if(view_plots){plot_all_list will plot all stations/data frames in list object
-#' if(view_plots){plot_all_list(listobject = nwtchart, timecol = "date", mets = c("airtemp", "ppt"))} # default is to plot which timesteps have missing data
-#' # > note: temp datasets were infilled for earlier periods by older methods, which is why missing data only occur for most recent decade+
-#' 
-#' # setting plotNA = F will plot the numeric data
-#' if(view_plots){plot_all_list(listobject = nwtchart, timecol = "date", mets = c("airtemp", "ppt"), plotNA = F)}
-#' 
-#' #' Potential drift in SDL tmin data (noticeable upward trend not present in max -- avg is calculated from min/max)
-#' #' Increase in daily ppt overtime for Saddle not present at C1 or D1 also noticeable
-#' 
-#' 
-#' # for illustration, the infilled chart data
-#' # > show actual values because no missing data present in infilled dataset
-#' if(view_plots){plot_all_list(listobject = nwtchart_infilled, timecol = "date", mets = c("m.*_temp", "precip", "DTR"), plotNA = F)}
-#' 
+# 1.1. NWT climate daily chart -----
+# if(view_plots){plot_all_list will plot all stations/data frames in list object
+if(view_plots){plot_all_list(listobject = nwtchart, timecol = "date", 
+                             mets = c("airtemp", "ppt"))} 
+# default is to plot which timesteps have missing data (TRUE)
+# > note: temp datasets were infilled for earlier periods by older methods, 
+# which is why missing data only occur for most recent decade+
+
+# setting plotNA = F will plot the numeric data
+if(view_plots){plot_all_list(listobject = nwtchart,timecol = "date",
+                             mets = c("airtemp", "ppt"), plotNA = F)}
+
+#' Potential drift in SDL tmin data (noticeable upward trend not present in max -- avg is calculated from min/max)
+#' Increase in daily ppt overtime for Saddle not present at C1 or D1 also noticeable
 
 # nothing to do here for prep but to stack all datasets
 chartTemp_out <-lapply(nwtchart[1:3], tidytemp)
@@ -122,16 +107,15 @@ chartPPT_out <- check_datetime(chartPPT_out, groupvar = c("local_site"))
 # if(view_plots){plot_all_list(listobject = nwtlogger, timecol = "date", mets = c("airtemp", "ppt"))}
 # if(view_plots){plot_all_list(listobject = nwtlogger, timecol = "date", mets = c("airtemp", "ppt"), plotNA = F)}
 
-#' Here we see unrealistic values with D1 21x logger era for airtemp min, max and avg, otherwise temps across loggers are generally in the range of plausible but with noticeable spikes
-lapply(nwtlogger, names)
-loggerTemp_out <- lapply(nwtlogger, function(x) subset.data.frame(x, select = grep("site|logger|date|^airtemp|^flag_airtemp", names(x), ignore.case = T)))
-loggerTemp_out <- lapply(loggerTemp_out, function(x) subset.data.frame(x, select = grep("_as_", names(x), invert = TRUE, ignore.case = T))) #TODO MILES DELETE THIS!!
+#' Here we see unrealistic values with D1 21x logger era for airtemp min, max 
+# and avg, otherwise temps across loggers are generally in the range of plausible 
+# but with noticeable spikes
+
+loggerTemp_out <- lapply(nwtlogger, function(x) subset(x, select = grep("site|logger|date|^airtemp|^flag_airtemp", names(x), ignore.case = T)))
+# loggerTemp_out <- lapply(loggerTemp_out, function(x) subset(x, select = grep("_as_", names(x), invert = TRUE, ignore.case = T))) #TODO MILES DELETE THIS!!
 loggerTemp_out <- lapply(loggerTemp_out, tidytemp)
 # cr21x logger datasets don't have local_site so append dat name to each dataset so know which data corresponds to what
 loggerTemp_out <- addSource(loggerTemp_out)
-# for(i in 1:length(loggerTemp_out)){
-#   loggerTemp_out[[i]] <- cbind(datsource = names(loggerTemp_out)[i], data.frame(loggerTemp_out[[i]]))
-# }
 
 loggerTemp_out <- lapply(loggerTemp_out, check_datetime)
 loggerTemp_out <- data.table::rbindlist(loggerTemp_out, fill = T) %>% data.frame()
@@ -150,24 +134,18 @@ c1loggerPPT_out <- nwtlogger[["C123x"]] %>%
   dplyr::select(1:date, metric, measurement:ncol(.)) %>%
   check_datetime()
 
-
-
-
-
 # 1.3 Tvan infilled ----
 # only 1 site present, choose all columns present for metrics to plot except date, year and jday
-available_dataviz(tvan, timecol = "date", mets = names(tvan)[!grepl("date|ye|jda", names(tvan))], plotNA = F)
-
+if(view_plots){
+available_dataviz(tvan, timecol = "date", 
+                  mets = names(tvan)[!grepl("date|ye|jda", names(tvan))], 
+                  plotNA = F)
+}
+if(view_plots){
 # closer look at temp metrics
-available_dataviz(tvan, timecol = "date", mets = "^[a-z]+_temp", allvars = T, plotNA = F) # seems reasonable
-
-
-
-# 2. Other sources -----
-#' Other sources of data include: Ameriflux, Snotel, and GHCNd. As NEON towers acquire more data that may be an option.
-
-
-
+available_dataviz(tvan, timecol = "date", 
+                  mets = "^[a-z]+_temp", allvars = T, plotNA = F) # seems reasonable
+}
 # 2.1. Ameriflux -----
 #' There are 3 possible Ameriflux sites to draw from: US-NR1 (near C1), US-NR3 (Tvan East), US-NR4 (Tvan west)
 #' US-NR1 has the longest record and is the best curated (e.g., QAQC'd and gap-filled), but because Tvan near Saddle worth reviewing
@@ -236,9 +214,10 @@ ameriflux_out <- subset(ameriflux_out, rep == "_1_1_1" | grepl("3|4", station_id
 
 # 2.3. Snotel -----
 snotel$Date <- as.Date(snotel$Date) 
+if(view_plots){
 plot_all_groups(snotel[,!grepl("Flag", names(snotel))], timecol = "Date", mets = c("Pre.*", "Air.*"), 
                 groupvars = "Station.Name", plotNA = F)
-
+}
 #' All of these sites seem helpful (keep), variable names need to be standardized
 #' Snotel data include the precip increment, and the snow-adjusted precip increment. We want to use snow-adjusted.
 #' Snow-adjusted is "daily positive increment in precipitation accum. or SWE, whichever is larger, as observed by SNOTEL instrumentation. This is done to address known scenarios in underatch" (Kirk and Schmidilin 2016, Defining Large Precipitation Events in the Upper Colorado River Basin and Contributions to Lake Powell Inflow)

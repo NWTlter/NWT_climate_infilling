@@ -584,13 +584,16 @@ hmp_dailysds <- arrange(hmp_prep, date) %>%
   ungroup() %>%
   #compare within station, by date
   group_by(date, station_name) %>%
+  # Normalizing the Temp Values and their Lagged differences within sites
   mutate(ws_scaledelta = scale(delta),
          ws_scaletemp = scale(measurement)) %>%
   ungroup() %>%
   group_by(date, metric) %>%
+  # Normalizing the Temp Values and their Lagged differences across sites
   mutate(xs_scaledelta = scale(delta),
          xs_scaletemp = scale(measurement)) %>%
   ungroup() %>%
+  # Computing Ranks for all (MM unsure why)
   mutate(ws_deltarank = rank(-abs(ws_scaledelta)),
          ws_temprank = rank(-abs(ws_scaletemp)),
          xs_deltarank = rank(-abs(xs_scaledelta)),
@@ -603,6 +606,7 @@ hmp_dailysds <- arrange(hmp_prep, date) %>%
          flag_avg = measurement[metric == "airtemp_avg"] <=
            measurement[metric == "airtemp_min"] | measurement[metric == "airtemp_avg"]
          >= measurement[metric == "airtemp_max"])
+# Flagging values with a ws or xs scaled temp or lagged diffs greater than +/-2SD
 hmp_dailysds$flag_ws <- apply(hmp_dailysds[grep("ws_sc", names(hmp_dailysds))],
                               MARGIN = 1, function(x) sum(abs(x) >= 2) == 2)
 hmp_dailysds$flag_xs <- apply(hmp_dailysds[grep("xs_sc", names(hmp_dailysds))],

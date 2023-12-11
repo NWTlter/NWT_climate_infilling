@@ -19,15 +19,18 @@ c1_chart_infilled <- read.csv("c1/c1_chart_infilled_v1.csv") |>
   dplyr::mutate(date = lubridate::date(date))
 d1_chart_infilled <- read.csv("d1/d1_chart_infilled_v1.csv") |>
   dplyr::mutate(date = lubridate::date(date))
-# alldats <- read.csv("other_dats/alldats.csv")
+alldats <- read.csv("other_dats/alldats.csv")
 sdl_homogenized <- read.csv(paste0(datpath, "publish/sdl_daily_airtemp_gapfilled_ongoing.csv"))
 sdl_homogenized <- sdl_homogenized |> 
-  mutate(date = lubridate::date(date))
+  mutate(date = lubridate::date(date),
+         # Join all flag 2s for easy plotting (AAA = none infilled)
+         flag_1 = paste0(flag_1_hmp1,flag_1_hmp2,flag_1_hmp3))
 
 # ppt
 c1_ppt <- readRDS(paste0(datpath, "/infill/c1PPT_infilled_draft.rds"))
 d1_ppt <- readRDS(paste0(datpath, "/infill/d1PPT_infilled_draft.rds"))
-sdl_ppt <- readRDS(paste0(datpath, "publish/sdl_daily_precip_gapfilled_ongoing.csv"))
+sdl_ppt <- read.csv(paste0(datpath, "publish/sdl_daily_precip_gapfilled_ongoing.csv")) |>
+  dplyr::mutate(date = lubridate::date(date))
 # getting DFs of mean hmps at sdl, d1, c1 for visual comparison across sites
 # in the plotting code below
 sdl_hmps <- alldats %>% dplyr::filter(local_site %in% c('sdl_cr1000_hmp_1',
@@ -131,8 +134,8 @@ for (col in c("precip")){
   p <- ggplot()+
     geom_line(data = c1_ppt, aes(date, .data[[col]]))+
     geom_point(data = c1_ppt |>
-                 dplyr::filter(.data[['flag_2']] != 'A'),
-               aes(date, .data[[col]], color = .data[['flag_2']]),
+                 dplyr::filter(.data[['flag_1']] != 'A'),
+               aes(date, .data[[col]], color = .data[['flag_1']]),
                size = 2)+
     theme(legend.position = 'bottom')+
     ggtitle('c1 PPT Infilled Full Timeseries')+
@@ -143,7 +146,7 @@ for (col in c("precip")){
   p <- ggplot()+
     geom_line(data = d1_ppt |> filter( year > 2018), 
               aes(date, precip, color = 'd1_pt'))+
-    geom_line(data = c1_ppt |> filter( year > 2018), 
+    geom_line(data = c1_ppt |> filter( year > 2018),
               aes(date, precip, color = 'c1_ppt'))+
     geom_line(data = sdl_ppt |> filter( year > 2018),
               aes(date, .data[[col]], color = 'sdl_homogenized'))+
@@ -191,8 +194,8 @@ for (col in c("precip")){
         geom_point(data = c1_ppt |>
                      dplyr::filter(lubridate::year(date) == y &
                                      lubridate::month(date) == mon &
-                                     .data[['flag_2']] != 'A'),
-                   aes(date, .data[[col]], shape = .data[['flag_2']]),
+                                     .data[['flag_1']] != 'A'),
+                   aes(date, .data[[col]], shape = .data[['flag_1']]),
                    color = 'red', size = 2)+
         theme(legend.position = 'bottom')+
         ggtitle(paste('c1 PPT Infilled Cross Site Comparison', y))+
@@ -280,8 +283,8 @@ for (col in c("precip")){
   p <- ggplot()+
     geom_line(data = d1_ppt, aes(date, .data[[col]]))+
     geom_point(data = d1_ppt |>
-                 dplyr::filter(.data[['flag_2']] != 'A'),
-               aes(date, .data[[col]], color = .data[['flag_2']]),
+                 dplyr::filter(.data[['flag_1']] != 'A'),
+               aes(date, .data[[col]], color = .data[['flag_1']]),
                size = 2)+
     theme(legend.position = 'bottom')+
     ggtitle('SDL PPT Infilled Full Timeseries')+
@@ -338,8 +341,8 @@ for (col in c("precip")){
         geom_point(data = d1_ppt |>
                      dplyr::filter(lubridate::year(date) == y &
                                      lubridate::month(date) == mon &
-                                     .data[['flag_2']] != 'A'),
-                   aes(date, .data[[col]], shape = .data[['flag_2']]),
+                                     .data[['flag_1']] != 'A'),
+                   aes(date, .data[[col]], shape = .data[['flag_1']]),
                    color = 'red', size = 2)+
         theme(legend.position = 'bottom')+
         ggtitle(paste('d1 PPT Infilled Cross Site Comparison', y))+
@@ -368,8 +371,8 @@ for (col in c("airtemp_max_homogenized", "airtemp_min_homogenized",
   p <- ggplot()+
     geom_line(data = sdl_homogenized, aes(date, .data[[col]]))+
     geom_point(data = sdl_homogenized |>
-                 dplyr::filter(.data[['flag_2']] != 'A'),
-               aes(date, .data[[col]], shape = .data[['flag_2']]),
+                 dplyr::filter(.data[['flag_1']] != 'AAA'),
+               aes(date, .data[[col]], shape = .data[['flag_1']] == 'AAA'),
                color = 'orchid3', size = 2)+
     theme(legend.position = 'bottom')+
     ggtitle('SDL Homogenized / Infilled Full Timeseries')+
@@ -380,11 +383,11 @@ for (col in c("airtemp_max_homogenized", "airtemp_min_homogenized",
   p <- ggplot()+
     geom_line(data = d1_hmps, aes(date, airtemp_avg, color = 'd1_hmps_mean'))+
     geom_line(data = c1_hmps, aes(date, airtemp_avg, color = 'c1_hmps_mean'))+
-    geom_line(data = sdl_homogenized |> filter( yr > 2018),
+    geom_line(data = sdl_homogenized |> filter( year > 2018),
               aes(date, .data[[col]], color = 'sdl_homogenized'))+
     geom_point(data = sdl_homogenized |>
-                 dplyr::filter(yr > 2018 & .data[['flag_1']] != 'A'),
-               aes(date, .data[[col]], shape = .data[['flag_1']]),
+                 dplyr::filter(year > 2018 & .data[['flag_1']] != 'AAA'),
+               aes(date, .data[[col]], shape = .data[['flag_1']] == 'AAA'),
                color = 'red', size = 2)+
     theme(legend.position = 'bottom')+
     ggtitle('SDL Homogenized / Infilled Cross Site Comparison')+
@@ -402,8 +405,8 @@ for (col in c("airtemp_max_homogenized", "airtemp_min_homogenized",
       geom_line(data = sdl_homogenized |> filter( lubridate::year(date) == y), 
                 aes(date, .data[[col]], color = 'sdl_homogenized'))+
       geom_point(data = sdl_homogenized |>
-                   dplyr::filter(yr > 2018 & .data[['flag_1']] != 'A'),
-                 aes(date, .data[[col]], shape = .data[['flag_1']]),
+                   dplyr::filter(year > 2018 & .data[['flag_1']] != 'A'),
+                 aes(date, .data[[col]], shape = .data[['flag_1']] == 'AAA'),
                  color = 'red', size = 2)+
       theme(legend.position = 'bottom')+
       ggtitle(paste('SDL Homogenized / Infilled Cross Site Comparison', y))+
@@ -415,7 +418,65 @@ for (col in c("airtemp_max_homogenized", "airtemp_min_homogenized",
   }
 }
 
+# -
+# sdl hmps only (from homogenized dataset)
+if(!dir.exists(paste0(out_dir,"sdl/plots/temp/hmps_only/"))){
+  dir.create((paste0(out_dir,"sdl/plots/temp/hmps_only/")))
+}
 
+for (rep in 1:3){
+  sensor = paste0('hmp',rep)
+  if(!dir.exists(paste0(out_dir,"sdl/plots/temp/hmps_only/hmp",rep,'/'))){
+    dir.create((paste0(out_dir,"sdl/plots/temp/hmps_only/hmp",rep,'/')))
+  }
+
+  plot_out <- paste0(out_dir,"sdl/plots/temp/hmps_only/hmp",rep,'/')
+  
+  for (metric in c("airtemp_max", "airtemp_min", "airtemp_avg")){
+    col = paste0(metric,"_gapfilled_",sensor)
+    
+    print(paste('Plotting', col, '...'))
+    
+    p <- ggplot()+
+      geom_line(data = sdl_homogenized, aes(date, .data[[col]]))+
+      geom_point(data = sdl_homogenized |>
+                   dplyr::filter(.data[[paste0("flag_1_",sensor)]] != 'A'),
+                 aes(date, .data[[col]], shape = .data[[paste0("flag_1_",sensor)]]),
+                 color = 'red', size = 2)+
+      theme(legend.position = 'bottom')+
+      ggtitle(paste('SDL', sensor, 'only - Infilled Full Timeseries'))+
+      labs(y= col, x = 'Date')
+    
+    ggsave(paste0(plot_out, col, "_sdl_infilled_allyrs.png"), plot = p, device = 'png')
+
+    # Removed the > 2018 plot, not req for this sect # !
+    
+    for (y in 2019:2022){
+      p <- ggplot()+
+        # geom_line(data = sdl_hmps |> filter( lubridate::year(date) == y),
+        #           aes(date, airtemp_avg, color = 'sdl_hmps_mean'))+
+        # geom_line(data = c1_hmps |> filter( lubridate::year(date) == y),
+        #           aes(date, airtemp_avg, color = 'c1_hmps_mean'))+
+        geom_line(data = sdl_homogenized |> filter( lubridate::year(date) == y), 
+                  aes(date, .data[[col]]))+
+        geom_point(data = sdl_homogenized |> filter(year  == y) |> 
+                     dplyr::filter(.data[[paste0("flag_1_",sensor)]] != 'A'),
+                   aes(date, .data[[col]], shape = .data[[paste0("flag_1_",sensor)]]),
+                   color = 'red', size = 2)+
+        theme(legend.position = 'bottom')+
+        
+        ggtitle(paste('SDL', sensor, 'only - Infilled', y))+
+        scale_color_brewer(palette = 'Set2')+
+        labs(y= col, x = 'Date')
+      
+      ggsave(paste0(plot_out, col, "_sdl_infilled_",y,".png"), plot = p, device = 'png')
+      
+    }
+  }
+}
+
+
+# ppt
 if(!dir.exists(paste0(out_dir,"sdl/plots/ppt/"))){
   dir.create((paste0(out_dir,"sdl/plots/ppt/")))
 }
@@ -427,8 +488,8 @@ for (col in c("precip")){
   p <- ggplot()+
     geom_line(data = sdl_ppt, aes(date, .data[[col]]))+
     geom_point(data = sdl_ppt |>
-                 dplyr::filter(.data[['flag_2']] != 'A'),
-               aes(date, .data[[col]], color = .data[['flag_2']]),
+                 dplyr::filter(.data[['flag_1']] != 'A'),
+               aes(date, .data[[col]], color = .data[['flag_1']]),
                size = 2)+
     theme(legend.position = 'bottom')+
     ggtitle('SDL PPT Infilled Full Timeseries')+
@@ -442,8 +503,8 @@ for (col in c("precip")){
     geom_line(data = sdl_ppt |> filter( year > 2018),
               aes(date, .data[[col]], color = 'sdl_homogenized'))+
     geom_point(data = sdl_ppt |>
-                 dplyr::filter(year > 2018 & .data[['flag_1']] != 'A'),
-               aes(date, .data[[col]], shape = .data[['flag_1']]),
+                 dplyr::filter(year > 2018 & .data[['flag_1']] != 'AAA'),
+               aes(date, .data[[col]], shape = .data[['flag_1']] == 'AAA'),
                color = 'red', size = 2)+
     theme(legend.position = 'bottom')+
     ggtitle('SDL PPT Infilled Cross Site Comparison')+
@@ -461,12 +522,12 @@ for (col in c("precip")){
       geom_line(data = sdl_ppt |> filter( lubridate::year(date) == y), 
                 aes(date, .data[[col]], color = 'sdl_ppt'))+
       geom_point(data = sdl_ppt |>
-                   dplyr::filter(lubridate::year(date) == y & .data[['flag_1']] != 'A'),
-                 aes(date, .data[[col]], shape = .data[['flag_1']]),
+                   dplyr::filter(lubridate::year(date) == y & .data[['flag_1']] != 'AAA'),
+                 aes(date, .data[[col]], shape = .data[['flag_1']] == 'AAA'),
                  color = 'red', size = 2)+
       theme(legend.position = 'bottom')+
       ggtitle(paste('SDL PPT Infilled Cross Site Comparison', y))+
-      scale_color_brewer(palette = 'Set2')+
+      scale_color_brewer(palette = 'Set2', c('t', 'f'))+
       labs(y= col, x = 'Date')
     
     ggsave(paste0(plot_out, col, "_sdl_ppt_infilled_",y,".png"), plot = p, device = 'png')
@@ -485,8 +546,8 @@ for (col in c("precip")){
         geom_point(data = sdl_ppt |>
                      dplyr::filter(lubridate::year(date) == y &
                                      lubridate::month(date) == mon &
-                                     .data[['flag_2']] != 'A'),
-                   aes(date, .data[[col]], shape = .data[['flag_2']]),
+                                     .data[['flag_1']] != 'A'),
+                   aes(date, .data[[col]], shape = .data[['flag_1']]),
                    color = 'red', size = 2)+
         theme(legend.position = 'bottom')+
         ggtitle(paste('SDL PPT Infilled Cross Site Comparison', y))+

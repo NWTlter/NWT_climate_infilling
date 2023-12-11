@@ -165,7 +165,7 @@ ggplot(d1_chart_predicted |> dplyr::filter(yr > 2018))+
 # -- INFILL SDL HMPs -----
 
 # -- sdl hmp 1 ----
-sdl1000_hmp_1_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_1", 2018)
+sdl1000_hmp_1_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_1", 2019)
 sdl1000_hmp_1_order <- with(allsites, paired_site[grepl("sdl_cr1000_hmp_1", local_site) & final_rank!= 1])
 # moving window infill
 sdl1000_hmp_1_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_1", missing_dates = sdl1000_hmp_1_missing, site_order =  sdl1000_hmp_1_order)
@@ -193,7 +193,7 @@ ggplot(sdl1000_hmp_1_predicted) +
 
 
 # -- sdl hmp 2 ----
-sdl1000_hmp_2_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_2", 2018)
+sdl1000_hmp_2_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_2", 2022)
 sdl1000_hmp_2_order <- with(allsites, paired_site[grepl("sdl_cr1000_hmp_2", local_site) & final_rank!= 1])
 # moving window infill
 sdl1000_hmp_2_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_2", missing_dates = sdl1000_hmp_2_missing, site_order =  sdl1000_hmp_2_order)
@@ -220,7 +220,7 @@ ggplot(sdl1000_hmp_2_predicted) +
 
 
 # -- sdl hmp 3 ----
-sdl1000_hmp_3_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_3", 2018)
+sdl1000_hmp_3_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_3", 2022)
 sdl1000_hmp_3_order <- with(allsites, paired_site[grepl("sdl_cr1000_hmp_3", local_site) & final_rank!= 1])
 # moving window infill
 sdl1000_hmp_3_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_3", missing_dates = sdl1000_hmp_3_missing, site_order =  sdl1000_hmp_3_order)
@@ -252,9 +252,6 @@ sdl_hmps_predicted <- rbind(sdl1000_hmp_1_predicted, sdl1000_hmp_2_predicted, sd
   subset(select = -c(flagmax, flagmin, flag_airtemp_avg, airtemp_avg_infill)) %>%
   distinct()
 
-
-
-
 # -- WRITE OUT FOR HOMOGENIZATION ----
 
 # -- WRITE OUT
@@ -266,7 +263,7 @@ write.csv(d1_chart_predicted, file = "daily_met/Infilling_2022/d1/d1_chart_infil
           row.names = FALSE)
 write.csv(sdl_hmps_predicted, file = "daily_met/Infilling_2022/sdl/sdl_hmps_infilled_v1.csv",
           row.names = FALSE)
-saveRDS(allsdllog_predicted, paste0(datpath,"infill/sdlhmp_infilled_2023.rds"))
+# saveRDS(allsdllog_predicted, paste0(datpath,"infill/sdlhmp_infilled_2023.rds"))
 
 
 
