@@ -146,10 +146,10 @@ prepCSU <- function(dat){
 # function to read in Ameriflux data for sites at/near NWT (static file read-in)
 # > for dynamic read in, use amerifluxr package (CTW slightly prefers more control with static file read in to amerifluxr package)
 
-getAmeriflux <- function(datpath){
+getAmeriflux <- function(fluxpath){
   
   # id unzipped folders that have ameriflux data
-  fluxfolders <- list.dirs(datpath, full.names = T)
+  fluxfolders <- list.dirs(fluxpath, full.names = T)
   # grab AMF folders only
   fluxfolders <- fluxfolders[grep("AMF", fluxfolders)]
   # grab .csv files within each folder
@@ -365,8 +365,10 @@ tidytemp <- function(dat, datasource = NA, sep = "_", special = "flag", dropcol 
     tempspecial[[special]] <- as.character(tempspecial[[special]])
     
     # drop special vals from long-form dat and join wide to temp vals
-    dat_long <- subset(dat_long, !grepl(special, met)) %>%
-      left_join(tempspecial) %>%
+    dat_long <- subset(dat_long, !grepl(special, met)) %>% 
+      # dplyr::filter(!is.na(temp)) %>% 
+      dplyr::arrange(date, met) %>%
+      dplyr::left_join(tempspecial) %>%
       dplyr::select(1:date, yr:doy, met:ncol(.)) 
   }
   
@@ -375,6 +377,7 @@ tidytemp <- function(dat, datasource = NA, sep = "_", special = "flag", dropcol 
   
   # check if hmps present (if this is for NWT dataset.. assuming yes)
   hmps <- any(grepl("hmp", dat_long$met, ignore.case = T))
+  
   # if present, update logger, add column for reps and clean up metric
   if(hmps){
     # grab last column name before adding sensor and reps for reorganizing
@@ -397,7 +400,39 @@ tidytemp <- function(dat, datasource = NA, sep = "_", special = "flag", dropcol 
       dat_long <- subset(dat_long, select = -rep)
       print("No replicates detected; if error, review output")
     }
+  }
+  
+  # Check if aspirated sensors present, expected at C1..
+  # (will treat _as_ sensors as a separate source, analogous to HMPs)
+  aspirateds <- any(grepl("_as_", dat_long$met, ignore.case = T))
+  
+  if(aspirateds){ #MM added this 10-2023 
     
+    # grab last column name before adding sensor and reps for reorganizing
+    lastcol <- names(dat_long)[ncol(dat_long)]
+    # pull sensor name from met value
+    dat_long$sensor <- stringr::str_extract(dat_long$met, "_as_\\d+(\\.\\d+)?")
+    # clean up met
+    dat_long$met <- gsub("_as_\\d+(\\.\\d+)?", "", dat_long$met)
+    #pull rep from sensor col
+    dat_long <- dat_long |> 
+      mutate(
+        # If else statement to prevent writing over hmp set above.
+        rep = ifelse(grepl("_as_", sensor), paste0(gsub("_as_", "",
+                                                        sensor),'m'), rep)
+      )
+    # clean up sensor
+    dat_long$sensor <- stringr::str_extract(dat_long$sensor, "_as")
+    dat_long$logger <- with(dat_long, ifelse(!is.na(sensor), paste0(logger, sensor), logger))
+    # drop sensor col
+    dat_long <- subset(dat_long, select = -sensor)
+    # reorg cols
+    dat_long <- subset(dat_long, select = c(1:met, rep, temp:get(lastcol)))
+    # check there are reps, if all empty drop that too
+    if(all(is.na(dat_long$rep))){
+      dat_long <- subset(dat_long, select = -rep)
+      print("No replicates detected; if error, review output")
+    }
   }
   
   # if desired, prefix temp and special col colname with datasource
@@ -413,8 +448,12 @@ tidytemp <- function(dat, datasource = NA, sep = "_", special = "flag", dropcol 
   if("logger" %in% names(dat_long)){
     for(u in unique(dat_long$logger)){
       print(u)
-      mindate <- with(subset(dat_long, logger == u), ifelse(all(is.na(measurement)), as.character(max(date)), as.character(min(date[!is.na(measurement)]))))
-      maxdate <- with(subset(dat_long, logger == u), ifelse(all(is.na(measurement)), as.character(min(date)), as.character(max(date[!is.na(measurement)]))))
+      mindate <- with(subset(dat_long, logger == u), 
+                      ifelse(all(is.na(measurement)), as.character(max(date)), 
+                             as.character(min(date[!is.na(measurement)]))))
+      maxdate <- with(subset(dat_long, logger == u), 
+                      ifelse(all(is.na(measurement)), as.character(min(date)), 
+                             as.character(max(date[!is.na(measurement)]))))
       print(mindate)
       print(maxdate)
       # remove unrelevant dates
