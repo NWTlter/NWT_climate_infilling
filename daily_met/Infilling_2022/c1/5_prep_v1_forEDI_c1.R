@@ -50,61 +50,28 @@ tkd1_ppt <- getTabular(186)
 # Read in Keith Jennings dataset for naming conventions as well
 jennings <- getTabular(168)
 
-# What sites temporally overlapped saddle logger data? # -----------------------
-# 1986-2017 = loggers
-# 2018 - present = HMP sensor period
-# 
-# subset(ghcndtemp, yr > 2017, select = c(station_id, station_name)) %>%
-#   distinct() %>%
-#   arrange(station_id) %>%
-#   data.frame() # berthoud only available for 1981-1985
-# 
-# subset(ghcndtemp, yr > 2017, select = c(station_id, station_name)) %>%
-#   distinct() %>%
-#   arrange(station_id) %>%
-#   data.frame() 
-# 
-# subset(fluxtemp, yr > 2017, select = c(station_id, station_name)) %>%
-#   distinct() %>%
-#   arrange(station_id) %>%
-#   data.frame() # all available, only forest available for ppt
-# 
-# subset(snoteltemp, yr < 2017, select = c(station_id, station_name)) %>%
-#   distinct() %>%
-#   arrange(station_id) %>%
-#   data.frame() # all available post and before 2017
-# 
-# # check loggers
-# subset(nwtlogtemp, yr < 2017, select = c(station_id, station_name, local_site)) %>%
-#   distinct() %>%
-#   arrange(station_id) %>%
-#   data.frame() 
+# Read in currently posted temp version for aligning
+inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-nwt/185/2/3a2e8db4a0211a097f28917a6f5d4c95" 
+infile1 <- tempfile()
+try(download.file(inUrl1,infile1,method="curl"))
+if (is.na(file.size(infile1))) download.file(inUrl1,infile1,method="auto")
 
-# Which sites were actually used for c1 precipitation infilling? -----------
-subset(sitesppt, 
-       station_name %in% sitesppt$paired_site[sitesppt$station_name == "c1"],
-       select = c(station_id:station_name)) %>% 
-  distinct() %>%
-  data.frame() # NWT, Sawtooth, sdl, C1, D1
+posted_temp <-read.csv(infile1) |> 
+  dplyr::mutate(
+    max_temp = as.numeric(max_temp),
+    min_temp = as.numeric(min_temp),
+    DTR = as.numeric(DTR)
+  )
+unlink(infile1)
 
-subset(sitesppt, 
-       station_id %in% sitesppt$paired_site[sitesppt$station_name == "c1"],
-       select = c(station_id:station_name)) %>% 
-  distinct() %>%
-  data.frame() # not all there because of white space difference
+# Read in currently posted ppt version for aligning
+inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-nwt/184/5/be2f9ce2465dddeec1e42538cbf626d8" 
+infile1 <- tempfile()
+try(download.file(inUrl1,infile1,method="curl"))
+if (is.na(file.size(infile1))) download.file(inUrl1,infile1,method="auto")
 
-# Which sites were actually used for saddle temperature infilling? -------------
-subset(sitestemp, 
-       station_name %in% sitestemp$paired_site[grepl("c1", sitestemp$station_name)],
-       select = c(station_id:station_name)) %>% 
-  distinct() %>%
-  data.frame() 
-
-subset(sitestemp, 
-       station_id %in% sitestemp$paired_site[grepl("c1", sitestemp$station_name)],
-       select = c(station_id:station_name)) %>% 
-  distinct() %>%
-  arrange(station_id)
+posted_ppt <-read.csv(infile1)
+unlink(infile1)
 
 ################################################################################
 # Pretty Datasets!
@@ -210,12 +177,13 @@ c1_temp_pretty <- c1_temp_pretty %>%
   ) |> mutate(date = lubridate::date(date))
 
 #Inspect Flagging
-c1_temp_pretty |> 
+c1_temp_pretty |>
   ggplot()+
     geom_line(aes(date, airtemp_avg))+
-    # geom_point(aes(date, airtemp_avg), alpha = 0.5)+
+    geom_point(aes(date, airtemp_avg), alpha = 0.5)+
     geom_point(data = c1_temp_pretty |> subset(flag_1 != 'A'),
-               aes(date, airtemp_avg, shape = flag_1), color = 'red')
+               aes(date, airtemp_avg, shape = flag_1), color = 'red') +
+  xlim(c(lubridate::date("2020-01-01"), lubridate::date("2020-12-31")))
 
 # -- Inspect regression flags & metadata ----
 # revisit c1 flags again..
@@ -229,16 +197,6 @@ sapply(c1_temp_pretty[grepl("method", names(c1_temp_pretty))],
 # QAQC notes should be intelligible and standardized
 c1_temp_flagging <- subset(c1_temp) %>%
   subset(select = grepl("date|yr|mon|flag", names(.)))
-
-# separate qc flagging
-c1_temp_qcflagging <- c1_temp_flagging %>%
-  subset(select = grepl("date|yr|mon|logger|qc", names(.))) %>%
-  gather(met, val, airtemp_max_qcflag_hmp1:ncol(.)) %>%
-  mutate(airtemp = str_extract(met, "airtemp_min|airtemp_max|airtemp_avg"),
-         met = gsub("^a.*_max_|^a.*_avg_|^a.*_min_", "", met)) %>%
-  distinct() %>%
-  # keep only records with flags (value NA'd)
-  subset(!is.na(val))
 
 # -- clean up station names ----
 # source station names should be clear
@@ -277,6 +235,14 @@ for(n in source_columns){
 # check names
 sapply(c1_temp_pretty[grepl("source", names(c1_temp_pretty))], unique) # looks good
 
+# Calculate DTR
+c1_temp_pretty <- c1_temp_pretty |> 
+  dplyr::mutate(
+    DTR = ifelse(!is.na(dtr_infill), dtr_infill,
+                 airtemp_max - airtemp_min)
+  )
+
+
 # -- finalize dataset -----
 # check cols and arrangement: remove mon, doy, pay attention to letter casing
 str(c1_temp_pretty) # colnames look okay
@@ -285,15 +251,50 @@ str(c1_temp_pretty) # colnames look okay
 sapply(c1_temp_pretty[grepl("LTER|local|logg|flag|source",names(c1_temp_pretty))],
        function(x) sort(unique(x)))
 
-# Capitalize local site and logger values
+# Rename some variables to match what is posted_temp on EDI now.
 c1_temp_pretty <- c1_temp_pretty |> 
   mutate(
     local_site = local_site |> toupper(),
+    infill_QAnote = NA,
+    Tmax_QAflag = NA,
+    Tmin_QAflag = NA
+  ) |> 
+  dplyr::rename(
+    mean_temp = airtemp_avg,
+    max_temp = airtemp_max,
+    min_temp = airtemp_min,
+    num_obs_in_t_mean_regression_equation = airtemp_avg_n.obs,
+    num_obs_in_TDTR_regression_equation = dtr_n.obs,
+    source_station = source.station,
+    raw_Tmean = raw_airtemp_avg,
+    raw_Tmax = raw_airtemp_max,
+    raw_Tmin = raw_airtemp_min
   )
+
+names(c1_temp_pretty) <- gsub('airtemp_avg', 't_mean', names(c1_temp_pretty))
+names(c1_temp_pretty) <- gsub('dtr_', 'TDTR_', names(c1_temp_pretty))
+names(c1_temp_pretty) <- gsub('_equation', '_regression_equation', names(c1_temp_pretty))
+
+
+name_alignment <- data.frame(posted_temp = c(names(posted_temp), 
+                                        rep(NA, length(names(c1_temp_pretty)) - 
+                                              length(names(posted_temp)))),
+                             new = names(c1_temp_pretty))
+c1_temp_pretty <- c1_temp_pretty |> 
+  dplyr::select(LTER_site, local_site, year, date, max_temp, mean_temp, min_temp,
+                DTR, flag_1, flag_2, flag_3, source_station, t_mean_pvalue, t_mean_rsquared,
+                num_obs_in_t_mean_regression_regression_equation, t_mean_regression_equation,
+                TDTR_pvalue, TDTR_rsquared, num_obs_in_TDTR_regression_regression_equation,
+                TDTR_regression_equation, infill_QAnote, Tmax_QAflag, Tmin_QAflag,
+                raw_Tmean, raw_Tmax, raw_Tmin)
+
+name_alignment <- data.frame(posted_temp = c(names(posted_temp), NA),
+                             new = names(c1_temp_pretty))
 
 # be sure no duplicate dates and all dates accounted for
 summary(seq.Date(min(c1_temp_pretty$date), max(c1_temp_pretty$date), 1) %in% c1_temp_pretty$date)
 summary(duplicated(c1_temp_pretty$date)) #looks good!
+
 
 # -- write out pretty temp -----
 # for NWT long term datasets:
@@ -380,10 +381,13 @@ names(tkd1_ppt) # put winteradj before precip
 #drop pretty_name column
 c1_ppt_pretty <- c1_ppt_pretty |> dplyr::select(-pretty_name)
 
-
-
 c1_ppt_pretty <- c1_ppt_pretty %>%
   rename(compare_qcnote = compare_qcflag)
+
+c1_ppt_pretty <- c1_ppt_pretty[names(posted_ppt)]
+
+# names(posted_ppt)[!names(posted_ppt) %in% names(c1_ppt_pretty)]
+# names(c1_ppt_pretty)[!names(c1_ppt_pretty) %in% names(posted_ppt)]
 
 # -- write out pretty ppt -----
 
@@ -391,5 +395,5 @@ c1_ppt_pretty <- c1_ppt_pretty %>%
 # write out csv with utf-8 and \r\n eol (end of line)
 # (need to change this in code settings, check it looks good after write out)
 write.csv(c1_ppt_pretty, paste0(datpath, "publish/c1_daily_precip_gapfilled_ongoing.csv"), 
-          row.names = F, na = "NaN", quote = T)
+          row.names = F, na = "NaN", quote = T, fileEncoding = 'utf-8')
 

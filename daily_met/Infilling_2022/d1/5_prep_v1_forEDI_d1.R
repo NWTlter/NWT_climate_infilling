@@ -3,7 +3,7 @@
 #' Change log:
 #'  Miles 2023 - Commented out what doesn't apply for this year, changed pathing
 
-#TODO B* flag...
+
 ################################################################################
 # Set up
 ################################################################################
@@ -50,8 +50,31 @@ tkd1_ppt <- getTabular(186)
 # Read in Keith Jennings dataset for naming conventions as well
 jennings <- getTabular(168)
 
+# Read in currently posted temp version for aligning
+inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-nwt/187/2/7d83b12a87738a45084d2f04d9256051" 
+infile1 <- tempfile()
+try(download.file(inUrl1,infile1,method="curl"))
+if (is.na(file.size(infile1))) download.file(inUrl1,infile1,method="auto")
+
+posted_temp <-read.csv(infile1) |> 
+  dplyr::mutate(
+    max_temp = as.numeric(max_temp),
+    min_temp = as.numeric(min_temp),
+    DTR = as.numeric(DTR)
+  )
+unlink(infile1)
+
+# Read in currently posted ppt version for aligning
+inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-nwt/186/3/e59295299fd2e7fbf748712f9b6851f5" 
+infile1 <- tempfile()
+try(download.file(inUrl1,infile1,method="curl"))
+if (is.na(file.size(infile1))) download.file(inUrl1,infile1,method="auto")
+
+posted_ppt <-read.csv(infile1)
+unlink(infile1)
+
 ################################################################################
-# Pretty Datasets!
+# Notes RE: flags and naming conventions
 ################################################################################
 
 #Note from CTW:
@@ -99,33 +122,27 @@ sapply(jennings[grepl("LTER|local|flag", names(jennings))],
 # infilled the data]
 
 
-# -- 1. PRETTY c1 TEMP --------------------------------------------------------
+################################################################################
+# Prett D1 Temp
+################################################################################
 # Init a new dataframe to pretty up
 d1_temp_pretty <- d1_temp
 
 # Change names of pval, r2, and year columns
 names(d1_temp_pretty) <- gsub("pval$|pval(?=_)" , "pvalue", 
-                              names(d1_temp_pretty), perl = T)
+                              names(d1_temp), perl = T)
 names(d1_temp_pretty) <- gsub("r2" , "rsquared", names(d1_temp_pretty))
 names(d1_temp_pretty)[names(d1_temp_pretty) == "yr"] <- "year"
 
-# i guess put year before date to match c1 and d1 infilled? and in raw 
-# datasets and tk infilled, max, min and avg is the order
-# order temps: max, min, avg
-
-#Note from Miles: no adjustment columns because
-# only HMPS here. Adjustment column contains the value
-# applied to max, min, avg from non-hmp sources to 
-#cross calibrate them to extend HMPs. 
-
+# arrange columns and drop mon & doy
 d1_temp_pretty <- d1_temp_pretty |> 
   dplyr::select(LTER_site, local_site, year, date,everything(), -mon, -doy)
 
-# -- Populate flag columns based on criteria in methods of TK/CTW packages
+# Populate flag columns based on criteria in methods of TK/CTW packages
 d1_temp_pretty <- d1_temp_pretty %>%
-  dplyr::mutate(
+  mutate(
     # Flagging based on method for flag_1
-    flag_1 = dplyr::case_when(
+    flag_1 = case_when(
       is.na(method) ~ "A",
       grepl("multi", method) & airtemp_avg_pvalue <= 0.05 ~ "B",
       grepl("multi", method) & airtemp_avg_pvalue > 0.05 ~ "C",
@@ -135,7 +152,7 @@ d1_temp_pretty <- d1_temp_pretty %>%
     ),
     
     # Flagging for tmax/tmin derivation for flag_2
-    flag_2 = dplyr::case_when(
+    flag_2 = case_when(
       is.na(method) ~ "A",
       airtemp_max_method == "predicted" & airtemp_min_method == "predicted" ~ "B",
       grepl("failed", airtemp_max_method) ~ "B*",
@@ -145,13 +162,13 @@ d1_temp_pretty <- d1_temp_pretty %>%
     ),
     
     # Flagging for dtr pval for flag_3
-    flag_3 = dplyr::case_when(
+    flag_3 = case_when(
       is.na(method) ~ "A",
       dtr_pvalue <= 0.05 ~ "B",
       dtr_pvalue > 0.05 ~ "C",
       TRUE ~ NA_character_
     )
-  ) |> dplyr::mutate(date = lubridate::date(date))
+  ) |> mutate(date = lubridate::date(date))
 
 #Inspect Flagging
 d1_temp_pretty |>
@@ -162,7 +179,7 @@ d1_temp_pretty |>
              aes(date, airtemp_avg, shape = flag_1), color = 'red')
 
 # -- Inspect regression flags & metadata ----
-# revisit c1 flags again..
+
 sapply(d1_temp_pretty[grepl("flag", names(d1_temp_pretty))], 
        function(x) sort(unique(x)))
 
@@ -174,16 +191,6 @@ sapply(d1_temp_pretty[grepl("method", names(d1_temp_pretty))],
 d1_temp_flagging <- subset(d1_temp) %>%
   subset(select = grepl("date|yr|mon|flag", names(.)))
 
-# separate qc flagging
-d1_temp_qcflagging <- d1_temp_flagging %>%
-  subset(select = grepl("date|yr|mon|logger|qc", names(.))) %>%
-  gather(met, val, airtemp_max_qcflag_hmp1:ncol(.)) %>%
-  mutate(airtemp = str_extract(met, "airtemp_min|airtemp_max|airtemp_avg"),
-         met = gsub("^a.*_max_|^a.*_avg_|^a.*_min_", "", met)) %>%
-  distinct() %>%
-  # keep only records with flags (value NA'd)
-  subset(!is.na(val))
-
 # -- clean up station names ----
 # source station names should be clear
 sapply(d1_temp_pretty[grepl("source", names(d1_temp_pretty))], 
@@ -194,9 +201,10 @@ sapply(d1_temp_pretty[grepl("source", names(d1_temp_pretty))],
 # > D1 and C1 gap-filled have lowcase loggers, but will follow how it's shown on EDI
 # Snotel has: Name (number)
 # GHCDN is last 5 digits of station ID
-unique(d1_temp_pretty$source_station)
+unique(d1_temp_pretty$source.station)
 
-temp_station_LUT <- distinct(sitestemp[c("station_id", "station_name", "local_site", "source")]) %>%
+temp_station_LUT <- distinct(sitestemp[c("station_id", "station_name", 
+                                         "local_site", "source")]) %>%
   mutate(
     pretty_name = dplyr::case_match(source,
                                     'nwt lter' ~ gsub("_", " ", station_id) |> toupper(),
@@ -221,34 +229,86 @@ for(n in source_columns){
 # check names
 sapply(d1_temp_pretty[grepl("source", names(d1_temp_pretty))], unique) # looks good
 
+# Calculate DTR
+d1_temp_pretty <- d1_temp_pretty |> 
+  dplyr::mutate(
+    DTR = airtemp_max - airtemp_min
+  )
+
 # -- finalize dataset -----
-# check cols and arrangement: remove mon, doy, pay attention to letter casing
-str(d1_temp_pretty) # colnames look okay
 
 # final check of ranges and char values
 sapply(d1_temp_pretty[grepl("LTER|local|logg|flag|source",names(d1_temp_pretty))],
        function(x) sort(unique(x)))
 
-# Capitalize local site and logger values
+# Rename some variables to match what is posted_temp on EDI now.
 d1_temp_pretty <- d1_temp_pretty |> 
   mutate(
-    local_site = local_site |> toupper(),
+    local_site = gsub("_CHART", "", local_site |> toupper()),
+    infill_QA_note = NA,
+    Tmax_QAflag = NA,
+    Tmin_QAflag = NA
+  ) |> 
+  dplyr::rename(
+    mean_temp = airtemp_avg,
+    max_temp = airtemp_max,
+    min_temp = airtemp_min,
+    num_obs_in_t_mean_regression_equation = airtemp_avg_n.obs,
+    num_obs_in_TDTR_regression_equation = dtr_n.obs,
+    t_mean_regression_equation = airtemp_avg_equation,
+    TDTR_regression_equation = dtr_equation,
+    source_station = source.station,
+    raw_Tmean = raw_airtemp_avg,
+    raw_Tmax = raw_airtemp_max,
+    raw_Tmin = raw_airtemp_min
   )
+
+names(d1_temp_pretty) <- gsub('airtemp_avg', 't_mean', names(d1_temp_pretty))
+names(d1_temp_pretty) <- gsub('dtr_', 'TDTR_', names(d1_temp_pretty))
+
+
+
+name_alignment <- data.frame(posted_temp = c(names(posted_temp), 
+                                             rep(NA, length(names(d1_temp_pretty)) - 
+                                                   length(names(posted_temp)))),
+                             new = names(d1_temp_pretty))
+
+d1_temp_pretty <- d1_temp_pretty |> 
+  dplyr::select(LTER_site, local_site, year, date, 
+                max_temp, mean_temp, min_temp, DTR,
+                flag_1, flag_2, flag_3, 
+                source_station, t_mean_pvalue, t_mean_rsquared,
+                num_obs_in_t_mean_regression_equation, t_mean_regression_equation,
+                TDTR_pvalue, TDTR_rsquared, num_obs_in_TDTR_regression_equation,
+                TDTR_regression_equation, infill_QA_note, 
+                Tmax_QAflag, Tmin_QAflag,
+                raw_Tmean, raw_Tmax, raw_Tmin)
+
+name_alignment <- data.frame(posted_temp = c(names(posted_temp), NA),
+                             new = names(d1_temp_pretty))
 
 # be sure no duplicate dates and all dates accounted for
 summary(seq.Date(min(d1_temp_pretty$date), max(d1_temp_pretty$date), 1) %in% d1_temp_pretty$date)
 summary(duplicated(d1_temp_pretty$date)) #looks good!
+
+names(posted_temp)[!names(posted_temp) %in% names(d1_temp_pretty)]
+names(d1_temp_pretty)[!names(d1_temp_pretty) %in% names(posted_temp)]
 
 # -- write out pretty temp -----
 # for NWT long term datasets:
 # make NA NaN instead (tell sce NaN in this case = no value, not data are missing)
 # write out csv with utf-8 and \r\n eol (end of line)
 # (need to change this in code settings, check it looks good after write out)
-write.csv(d1_temp_pretty, paste0(datpath, "publish/d1_daily_airtemp_gapfilled_ongoing.csv"),
-          row.names = F, na = "NaN", quote = T)
+write.csv(d1_temp_pretty, 
+          paste0(datpath, "publish/d1_daily_airtemp_gapfilled_ongoing.csv"),
+          row.names = F, na = "NaN", quote = T, fileEncoding = "utf-8")
 
-# -- 2. PRETTY c1 PPT -----
-# pretty all dates, but only write out summer months pre-oct 1988 (show in fig to meagan and sarah that c1 ppt )
+################################################################################
+# Pretty D1 Precipitation
+################################################################################
+
+# pretty all dates, but only write out summer months pre-oct 1988 
+# (show in fig to meagan and sarah that c1 ppt )
 
 # check flags/notes:
 sapply(d1_ppt[grepl("note|flag", names(d1_ppt))], unique)
@@ -257,17 +317,21 @@ sapply(d1_ppt[grepl("note|flag", names(d1_ppt))], unique)
 
 # notes I have:
 # 1) qdays flag/note, 2) infill qc note/flag, 3) qc and post-infill qc note
-# keep all three cols rather than condense (in case any data user interested), just clean up notes
+# keep all three cols rather than condense (in case any data user interested), 
+# just clean up notes
 
 # -- clean up QC notes -----
-d1_ppt_pretty <- d1_ppt %>%
+d1_ppt_pretty<- d1_ppt %>%
   # change ppt to precip
-  mutate_at(.vars = names(.)[grepl("_qc", names(.))], function(x) gsub("ppt", "precip", x)) %>%
+  mutate_at(.vars = names(.)[grepl("_qc", names(.))], 
+            function(x) gsub("ppt", "precip", x)) %>%
   # capitalize first letter of note
   mutate_at(.vars = names(.)[grepl("_qc", names(.))], 
             function(x) ifelse(!is.na(x), 
-                               # if not present, paste capitalized first letter, then the rest of string
-                               paste0(casefold(substr(x, 1,1), upper = T), substr(x, 2, nchar(x))),
+                               # if not present, paste capitalized first letter, 
+                               # then the rest of string
+                               paste0(casefold(substr(x, 1,1), upper = T), 
+                                      substr(x, 2, nchar(x))),
                                # else leave as is
                                x)
   )
@@ -304,10 +368,7 @@ ppt_sites_LUT <- subset(temp_station_LUT, grepl("snot|ghc", source), select = -l
 d1_ppt_pretty <- left_join(d1_ppt_pretty, ppt_sites_LUT[c("keycol", "pretty_name")], by = c("source_station" = "keycol"))
 # review before replace
 #View(subset(d1_ppt_pretty, !is.na(pretty_name))) # looks fine
-d1_ppt_pretty <- mutate(d1_ppt_pretty, 
-                        source_station = ifelse(!is.na(pretty_name), 
-                                                pretty_name, source_station)) |> 
-  select(-pretty_name)
+d1_ppt_pretty <- mutate(d1_ppt_pretty, source_station = ifelse(!is.na(pretty_name), pretty_name, source_station))
 
 
 # -- finalize dataset -----
@@ -324,8 +385,17 @@ sapply(d1_ppt_pretty[grepl("LTER|local|flag|source|qc", names(d1_ppt_pretty))], 
 names(d1_ppt_pretty)
 names(tkd1_ppt) # put winteradj before precip
 
+#drop pretty_name column
+d1_ppt_pretty <- d1_ppt_pretty |> dplyr::select(-pretty_name)
+
 d1_ppt_pretty <- d1_ppt_pretty %>%
   rename(compare_qcnote = compare_qcflag)
+
+## align with what is currently posted
+# names(d1_ppt_pretty)[!names(d1_ppt_pretty) %in% names(posted_ppt)]
+# names(posted_ppt)[!names(posted_ppt) %in% names(d1_ppt_pretty)]
+d1_ppt_pretty <- d1_ppt_pretty[names(posted_ppt)]
+
 
 # -- write out pretty ppt -----
 

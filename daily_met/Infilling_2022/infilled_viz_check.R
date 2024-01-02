@@ -266,7 +266,7 @@ for (col in c("airtemp_max", "airtemp_min", "airtemp_avg")){
       scale_color_brewer(palette = 'Set2')+
       labs(y= col, x = 'Date')
     
-    ggsave(paste0(plot_out, col, "_infilled_",y,".png"), plot = p, device = 'png')
+    ggsave(paste0(plot_out, col, "_d1_infilled_",y,".png"), plot = p, device = 'png')
     
   }
 }
@@ -287,7 +287,7 @@ for (col in c("precip")){
                aes(date, .data[[col]], color = .data[['flag_1']]),
                size = 2)+
     theme(legend.position = 'bottom')+
-    ggtitle('SDL PPT Infilled Full Timeseries')+
+    ggtitle('D1 PPT Infilled Full Timeseries')+
     labs(y= col, x = 'Date')
   
   ggsave(paste0(plot_out, col, "_d1_ppt_infilled_allyrs.png"), plot = p, device = 'png')
@@ -386,8 +386,8 @@ for (col in c("airtemp_max_homogenized", "airtemp_min_homogenized",
     geom_line(data = sdl_homogenized |> filter( year > 2018),
               aes(date, .data[[col]], color = 'sdl_homogenized'))+
     geom_point(data = sdl_homogenized |>
-                 dplyr::filter(year > 2018 & .data[['flag_1']] != 'AAA'),
-               aes(date, .data[[col]], shape = .data[['flag_1']] == 'AAA'),
+                 dplyr::filter(year > 2018 & .data[['flag_1']] != 'A'),
+               aes(date, .data[[col]], shape = .data[['flag_1']] == 'A'),
                color = 'red', size = 2)+
     theme(legend.position = 'bottom')+
     ggtitle('SDL Homogenized / Infilled Cross Site Comparison')+
@@ -405,7 +405,7 @@ for (col in c("airtemp_max_homogenized", "airtemp_min_homogenized",
       geom_line(data = sdl_homogenized |> filter( lubridate::year(date) == y), 
                 aes(date, .data[[col]], color = 'sdl_homogenized'))+
       geom_point(data = sdl_homogenized |>
-                   dplyr::filter(year > 2018 & .data[['flag_1']] != 'A'),
+                   dplyr::filter(year == y & .data[['flag_1']] != 'A'),
                  aes(date, .data[[col]], shape = .data[['flag_1']] == 'AAA'),
                  color = 'red', size = 2)+
       theme(legend.position = 'bottom')+
@@ -503,8 +503,8 @@ for (col in c("precip")){
     geom_line(data = sdl_ppt |> filter( year > 2018),
               aes(date, .data[[col]], color = 'sdl_homogenized'))+
     geom_point(data = sdl_ppt |>
-                 dplyr::filter(year > 2018 & .data[['flag_1']] != 'AAA'),
-               aes(date, .data[[col]], shape = .data[['flag_1']] == 'AAA'),
+                 dplyr::filter(year > 2018 & .data[['flag_1']] != 'A'),
+               aes(date, .data[[col]], shape = .data[['flag_1']] == 'A'),
                color = 'red', size = 2)+
     theme(legend.position = 'bottom')+
     ggtitle('SDL PPT Infilled Cross Site Comparison')+
@@ -522,8 +522,8 @@ for (col in c("precip")){
       geom_line(data = sdl_ppt |> filter( lubridate::year(date) == y), 
                 aes(date, .data[[col]], color = 'sdl_ppt'))+
       geom_point(data = sdl_ppt |>
-                   dplyr::filter(lubridate::year(date) == y & .data[['flag_1']] != 'AAA'),
-                 aes(date, .data[[col]], shape = .data[['flag_1']] == 'AAA'),
+                   dplyr::filter(lubridate::year(date) == y & .data[['flag_1']] != 'A'),
+                 aes(date, .data[[col]], shape = .data[['flag_1']] == 'A'),
                  color = 'red', size = 2)+
       theme(legend.position = 'bottom')+
       ggtitle(paste('SDL PPT Infilled Cross Site Comparison', y))+

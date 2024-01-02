@@ -181,7 +181,16 @@ sdl_temp_pretty <- sdl_temp_pretty |>
                   contains("gapfill"),
                   flag_1_hmp1:ncol(sdl_temp_pretty)))
 
-                  
+sdl_temp_pretty <- sdl_temp_pretty |> 
+  dplyr::mutate(
+    flag_1 = ifelse(flag_1_hmp1 != 'A' | flag_1_hmp2 != 'A' | flag_1_hmp3 != 'A',
+                    'H', 'A'),
+    flag_2 = ifelse(flag_2_hmp1 != 'A' | flag_2_hmp2 != 'A' | flag_2_hmp3 != 'A',
+                    'H', 'A'),
+    flag_3 = ifelse(flag_3_hmp1 != 'A' | flag_3_hmp2 != 'A' | flag_3_hmp3 != 'A',
+                    'H', 'A'),
+  )
+
 # -- Inspect regression flags ----
 # revisit sdl flags again..
 sapply(sdl_temp[grepl("flag|note", names(sdl_temp))], 
@@ -192,7 +201,8 @@ sapply(sdl_temp[grepl("flag|note", names(sdl_temp))],
 # # maybe note in qc_flag that prediction chosen over observed-adjusted
 # # which rows have B*
 # #View(subset(sdl_temp_pretty, flag_2 == "B*"))
-# # these both happened in observed tmax cases. for one, tmin pulled bc outside sensor range, the other date's tmin was absent
+# # these both happened in observed tmax cases. for one, tmin pulled bc outside 
+# # sensor range, the other date's tmin was absent
 # 
 # sdl_temp_pretty <- sdl_temp_pretty |> 
 #   mutate(
