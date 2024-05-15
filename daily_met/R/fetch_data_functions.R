@@ -1,6 +1,72 @@
 # functions to read NWT and neighbor datasets dynamically
 
+# ------------------------------------------------------------------------------
+# Function to fetch GHCN Data
+# ------------------------------------------------------------------------------
 
+fetchGHCND <- function(output_directory = getwd(), 
+                        save_individual_files = TRUE,
+                        save_stacked_datafile = TRUE){
+  #' Fetch GHCND Data
+  #'
+  #' This function fetches data from the Global Historical Climatology Network Daily 
+  #' (GHCND) for specified stations. It saves individual dataframes and/or the 
+  #' stacked dataframe to the specified output directory & always returns the 
+  #' stacked dataframe.
+  #'
+  #' @param output_directory A character string specifying the directory to save
+  #'                        the files. Defaults to the current working directory.
+  #' @param save_individual_files A logical indicating whether to save individual 
+  #'                              dataframes. Defaults to TRUE.
+  #' @param save_stacked_datafile A logical indicating whether to save the 
+  #'                              stacked dataframe. Defaults to TRUE.
+  #'
+  #' @return A dataframe containing the stacked data from all specified stations.
+  #' 
+  #' 
+  require(dplyr)
+  require(lubridate)
+  
+  # Define the base URL and station list
+  ghcnd_https <- "https://www.ncei.noaa.gov/data/global-historical-climatology-network-daily/access/"
+  station_list <- c(
+    "USW00094075", #BOULDER 14 W, CO US; 40.0354N	-105.541W	2995.6msl
+    "USC00051681", #COAL CREEK CANYON, CO US, 39.8958	-105.385	2728
+    "USC00052761", #ESTES PARK 3 SSE, CO US; 40.34875	-105.52	2381.1
+    "USC00053116", #FRASER, CO US; 39.9425	-105.817	2609.1
+    "USC00053496", #GRAND LAKE 1 NW, CO US; 40.2669	-105.832	2657.9
+    "USC00053500", #GRAND LAKE 6 SSW, CO US; 40.1849	-105.867	2526.2
+    "USC00059175" #WINTER PARK, CO US; 39.8898	-105.762	2772.2
+  )
+  
+  # Initialize a list to store individual dataframes
+  data_stack <- lapply(station_list, function(station){
+    cat("Reading in", station, "..." )
+    df <- read.csv(paste0(ghcnd_https, station, ".csv")) |> 
+      dplyr::mutate(DATE = lubridate::ymd(DATE))
+    cat(' Done.\n')
+    
+    # Save individual dataframes if the flag is set
+    if (save_individual_files) {
+      write.csv(df, file.path(output_directory, paste0(station, ".csv")),
+                row.names = FALSE)
+    }
+    
+    return(df)
+  }) 
+  
+  cat('Returning Stacked Data!\n')
+  # Bind individual dataframes into a single dataframe
+  data_stack <- dplyr::bind_rows(data_stack)
+  
+  # Save the stacked dataframe if the flag is set
+  if (save_stacked_datafile) {
+    write.csv(data_stack, file.path(output_directory, "ghcnd_all_data_stacked.csv"),
+              row.names = FALSE)
+  }
+  
+  return(data_stack)
+}
 
 # == FOR NWT DATA =====
 
