@@ -1,5 +1,12 @@
+# Ignore R workspace files
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+
+# Ignore MacOS directory metadata hidden files
 .DS_Store
+
+#Ignore CSVs
+*.csv
+
