@@ -1,6 +1,102 @@
 # functions to read NWT and neighbor datasets dynamically
 
 # ------------------------------------------------------------------------------
+# Function to fetch Ameriflux Data via library(amerfluxr)
+# ------------------------------------------------------------------------------
+
+fetchAmeriFlux <- function(output_directory = getwd(), 
+                       save_stacked_datafile = TRUE,
+                       ameriflux_email = NULL,
+                       ameriflux_user_id = NULL){
+  #' Fetch AmeriFlux Data
+  #'
+  #' This function fetches AmeriFlux data using the amerfluxr package and does
+  #' some light processing to stack them together in a particular way.
+  #'
+  #' @param output_directory A character string specifying the directory to save
+  #'                        the files. Defaults to the current working directory.
+  #' @param save_stacked_datafile A logical indicating whether to save the 
+  #'                              stacked dataframe. Defaults to TRUE.
+  #'
+  #' @return A dataframe containing the stacked data from all specified stations.
+  #' 
+  #' 
+  require(dplyr)
+  require(tidyr)
+  require(stringr)
+  require(purrr)
+  require(lubridate)
+  require(amerifluxr)
+  
+  if(is.null(ameriflux_user_id)) {
+    stop('Please provide a username associated with an AmeriFlux account.')
+  }
+  if(is.null(ameriflux_email)) {
+    stop('Please provide an email associated with an AmeriFlux account.')
+  }
+  cat('Downloading Ameriflux US-NR1, US-NR3, and US-NR4...\n')
+  flocs <- amerifluxr::amf_download_base(user_id = ameriflux_user_id,
+                             user_email = ameriflux_email,
+                             site_id = c("US-NR1", "US-NR3", "US-NR4"),
+                             data_product = "BASE-BADM",
+                             data_policy = "CCBY4.0",
+                             agree_policy = TRUE,
+                             intended_use = "synthesis",
+                             intended_use_text = "Infilling nearby climatology data",
+                             verbose = TRUE,
+                             out_dir = output_directory)
+  cat('Files saved to:', output_directory, '\n')
+  
+  cat('Unzipping...')
+  extract_file_paths <- lapply(flocs, function(x){
+    unzip(x ,overwrite = TRUE, exdir = output_directory)
+    })
+  cat('Done.\n')
+  
+  cat('Reading in Ameriflux data and joining with metadata...')
+  flux_files <- grep(".csv", 
+                     list.files(output_directory, full.names = TRUE),
+                     value = TRUE) |> unlist()
+  names(flux_files) <- stringr::str_extract(flux_files, pattern = "US-NR[0-9]")
+  
+  flux_data <- lapply(
+    flux_files,
+    function(x){
+      df <- read.csv(x, skip =2, colClasses = "character", na.strings = na_vals)
+      return(df)
+    })
+  
+  # append site info to data (metadata spreadsheet should be in same folder, if not ignore)
+  fluxmeta <- lapply(output_directory, function(x) list.files(x, pattern = "[.]xl", 
+                                                         full.names = T)) |> 
+    unlist()
+  names(fluxmeta) <- names(flux_files)
+
+  # read in metadata via readxl and trim to site info and location metadata
+  metalist <- lapply(fluxmeta, function(x) readxl::read_excel(x, trim_ws = T))
+  metalist <- lapply(metalist, function(x) {
+    subset(x, 
+           grepl("elev$|lat$|long$|\\bsite_name", VARIABLE, ignore.case = T),
+           select = c(SITE_ID, VARIABLE, DATAVALUE))})
+  
+  # metalist <- lapply(metalist, function(x) tidyr::pivot_wider(x[[1]], SITE_ID, VARIABLE, DATAVALUE))
+  metalist <- purrr::map(metalist, function(df) {
+    df |> 
+      tidyr::pivot_wider(names_from = VARIABLE, values_from = DATAVALUE)
+  })
+  
+  # column-bind  metadata to datlist data frames
+  for(i in names(flux_data)){
+    flux_data[[i]] <- cbind(data.frame(metalist[[i]]), data.frame(flux_data[[i]]))
+  }
+  cat('Done.\n')
+  # return Ameriflux data with site metadata as leading columns
+  return(flux_data)
+  
+}
+
+
+# ------------------------------------------------------------------------------
 # Function to fetch GHCN Data
 # ------------------------------------------------------------------------------
 
@@ -214,7 +310,11 @@ getSnotelNeighbors <- function(sites = c("Niwot", "UniversityCamp", "LakeEldora"
   # basic type of report requested (use metric units, daily summaries, from start of record for each station)
   snotelreport <- "https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customMultipleStationReport,metric/daily/start_of_period/"
   # sites to report
-  snotelsites <- "564:CO:SNTL%7C663:CO:SNTL%7C838:CO:SNTL%7C1251:CO:SNTL%7C1187:CO:SNTL%7Cid=%22%22%7Cname/"
+  # snotelsites <- "564:CO:SNTL%7C663:CO:SNTL%7C838:CO:SNTL%7C1251:CO:SNTL%7C1187:CO:SNTL%7Cid=%22%22%7Cname/"
+  # snotelsites <- c("564:CO:SNTLCid=%22%22%7Cname/", "663:CO:SNTL%7Cid=%22%22%7Cname/", 
+  #            "838:CO:SNTLCid=%22%22%7Cname/","1251:CO:SNTL%7Cid=%22%22%7Cname/",
+  #            "1187:CO:SNTLCid=%22%22%7Cname/")
+  
   # site metadata, observational data, and data flags requested
   # > could mod function to gsub out variables not interested in, but read in all for now
   snoteldats <- "POR_BEGIN,POR_END/stationId,name,elevation,latitude,longitude,PRCP::value,PRCP::qcFlag,PRCP::qaFlag,PRCPSA::value,PRCPSA::qcFlag,PRCPSA::qaFlag,TAVG::value,TAVG::qcFlag,TAVG::qaFlag,TMAX::value,TMAX::qcFlag,TMAX::qaFlag,TMIN::value,TMIN::qcFlag,TMIN::qaFlag?fitToScreen=false"
@@ -228,11 +328,17 @@ getSnotelNeighbors <- function(sites = c("Niwot", "UniversityCamp", "LakeEldora"
     snotelsites <- gsub(removesites, "", snotelsites)
   }
   
-  # put parts of url together in order: report type, sites, data requested
-  snotelurl <- paste0(snotelreport, snotelsites, snoteldats)
-  # read in data
-  snoteldat <- read.csv(snotelurl, comment.char = "#", na.strings = c(NA, "NA", "", " "), strip.white = T, blank.lines.skip = T, stringsAsFactors = F)
-  
+  snoteldat <- lapply(co_snotel_sites, function(s){
+    print(paste('Reading in SNOTEL Data from site', s, "..."))
+    site <- paste0(s, ":CO:SNTL%7Cid=%22%22%7Cname/")
+    # put parts of url together in order: report type, sites, data requested
+    url <- paste0(snotelreport, site, snoteldats)
+    # read in data
+    dat <- read.csv(url, comment.char = "#", na.strings = c(NA, "NA", "", " "), strip.white = T, blank.lines.skip = T, stringsAsFactors = F)
+
+    return(dat)
+  }) |> dplyr::bind_rows()
+
   return(snoteldat)
 }
 
