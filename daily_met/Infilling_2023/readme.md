@@ -40,3 +40,7 @@ I recommend running step 1 first, and then spending a long time examining the da
 and 2P. Once you're satisfied with the data that will be used to infill missing 
 data across sites, running step 3 - 5 are pretty quick. Then you can run `infilled_viz_check.R` 
 to generate a bunch of plots.
+
+This year, I worked the whole time series of data (since one of the infilling methods requires
+inter-year comparison), only infilled the last few years (~2020 - ) and then clipped to just include 2023
+in the reformat scripts in  the *NWT_metadata* repository.
