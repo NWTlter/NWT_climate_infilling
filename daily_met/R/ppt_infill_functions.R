@@ -424,7 +424,7 @@ choose_best <- function(missing_dates, seasonfill, historicfill){
 backfill_ppt <- function(dat){
   # ID qdays > 1 date
   qdays_dates <- subset(dat, qdays > 1) %>%
-    dplyr::select(date, ppt_tot, qdays)
+    dplyr::select(date, ppt_tot, qdays) %>% na.omit()
   
   # add empty col for storing backfilled c1 ppt vals, source of backfill, and empty date vector for dates where no complete companion station date available for backfilling
   dat$backfill <- NA
