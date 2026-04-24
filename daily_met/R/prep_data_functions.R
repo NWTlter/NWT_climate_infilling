@@ -406,24 +406,30 @@ tidytemp <- function(dat, datasource = NA, sep = "_", special = "flag", dropcol 
   # (will treat _as_ sensors as a separate source, analogous to HMPs)
   aspirateds <- any(grepl("_as_", dat_long$met, ignore.case = T))
   
-  if(aspirateds){ #MM added this 10-2023 
+  if(aspirateds){ #MM added this 10-2023 updated 04-2025
     
     # grab last column name before adding sensor and reps for reorganizing
     lastcol <- names(dat_long)[ncol(dat_long)]
     # pull sensor name from met value
-    dat_long$sensor <- stringr::str_extract(dat_long$met, "_as_\\d+(\\.\\d+)?")
+    dat_long$sensor <- stringr::str_extract(dat_long$met, "_as_\\d+(\\.\\d+)?|_asp\\d_")
     # clean up met
-    dat_long$met <- gsub("_as_\\d+(\\.\\d+)?", "", dat_long$met)
+    dat_long$met <- gsub("_as_\\d+(\\.\\d+)?|_asp\\d", "", dat_long$met)
     #pull rep from sensor col
     dat_long <- dat_long |> 
       mutate(
         # If else statement to prevent writing over hmp set above.
         rep = ifelse(grepl("_as_", sensor), paste0(gsub("_as_", "",
                                                         sensor),'m'), rep)
+      ) |> 
+      mutate(
+        rep = ifelse(grepl("_asp\\d_", sensor), stringr::str_extract(
+          sensor, "_asp(\\d)", group=1
+        ), rep)
       )
     # clean up sensor
-    dat_long$sensor <- stringr::str_extract(dat_long$sensor, "_as")
-    dat_long$logger <- with(dat_long, ifelse(!is.na(sensor), paste0(logger, sensor), logger))
+    dat_long$sensor <- stringr::str_extract(dat_long$sensor, "_asp|_as")
+    dat_long$logger <- with(dat_long, ifelse(!is.na(sensor), 
+      paste0(logger, sensor), logger))
     # drop sensor col
     dat_long <- subset(dat_long, select = -sensor)
     # reorg cols
@@ -437,7 +443,11 @@ tidytemp <- function(dat, datasource = NA, sep = "_", special = "flag", dropcol 
   
   # if desired, prefix temp and special col colname with datasource
   if(!is.na(datasource)){
-    colnames(dat_long)[colnames(dat_long) %in% c("temp", special)] <- paste(datasource, colnames(dat_long)[colnames(dat_long) %in% c("temp", special)], sep = sep)
+    colnames(dat_long)[
+      colnames(dat_long) %in% c("temp", special)
+    ] <- paste(datasource, colnames(dat_long)[
+        colnames(dat_long) %in% c("temp", special)
+      ], sep = sep)
   }
   
   # clean up colnames to match other dats out
