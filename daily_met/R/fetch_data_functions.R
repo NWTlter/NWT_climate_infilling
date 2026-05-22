@@ -201,6 +201,8 @@ getEntityId <- function(edi_id, version, site = "nwt", datanum = 1){
 
 # function to read in tabular csv dataset for data package (could make more generic with read table, but should know what you're reading in to use)
 getTabular <- function(edi_id, na_vals = c("", "NA", NA, NaN, ".", "NaN", " "), col_class = NULL, site = "nwt", datanum = 1){
+  # https://pasta.lternet.edu/package/data/eml/knb-lter-nwt/411/17/81101917c12b63474ddef47f104b7128
+  require(readr)
   v <- getPackageVersion(edi_id, site = site)
   packageId <- paste0("knb-lter-", site, ".", edi_id, ".", v)
   id <- getEntityId(edi_id, v, site = site, datanum = datanum)
@@ -227,7 +229,9 @@ getNWTdatlist <- function(datnums){
 
 
 # function to compile NWT raw chart ongoing climate data
-getNWTcharts <- function(sites = c("C1", "SDL", "D1"), mets = c("temp", "ppt")){
+getNWTcharts <- function(
+  sites = c("C1", "SDL", "D1"), 
+  mets = c("temp", "ppt") ) {
   
   # specify data package numbers for each site
   datnums <- list(

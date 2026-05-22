@@ -454,7 +454,7 @@ backfill_ppt <- function(dat){
     # sum project infill total
     infill_tot <- sum(temp_df$exp.ppt)
     # if infill sum not 0 when total accumulated is non-zero, proceed
-    if(!(infill_tot ==0 & qdays_dates$ppt_tot[i] >0)){
+    if(!(infill_tot == 0 & qdays_dates$ppt_tot[i] >0)){
       # calculate daily relative contribution of snotel ppt
       temp_df$relppt <- temp_df$exp.ppt/infill_tot
       dat$backfill[dat$date %in% event_dates] <- qdays_dates$ppt_tot[i] * temp_df$relppt
@@ -546,7 +546,7 @@ expand_backfill <- function(dat = alldats_qdays, bestmodels = sdl_chosen_qdays, 
     
     # (until I figure out better way to do this) pull out intercept and slope
     intercept <- as.numeric(gsub("x .*$", "", temp_formula))
-    slope <- as.numeric(gsub("^[0-9]+.[0-9]+x [+] ", "", temp_formula))
+    slope <- as.numeric(gsub("([+-]?[0-9]*\\.?[0-9]+)x.*", "\\1", temp_formula))
     temp_df$infill <- ifelse(is.na(temp_df$x), -Inf, (slope * temp_df$x) + intercept)
     temp_df$infillrun <- nrow(temp_df)
     

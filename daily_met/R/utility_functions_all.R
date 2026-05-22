@@ -109,14 +109,17 @@ getEntityId <- function(edi_id, version, site = "nwt", datanum = 1){
 
 # function to read in tabular csv dataset for data package (could make more generic with read table, but should know what you're reading in to use)
 getTabular <- function(edi_id, na_vals = c("", "NA", NA, NaN, ".", "NaN", " "), col_class = NULL, site = "nwt", datanum = 1){
-  require(readr)
+  # https://pasta.lternet.edu/package/data/eml/knb-lter-nwt/411/17/81101917c12b63474ddef47f104b7128
+  require(paste0("Reading in knb-lter-", site, ".", edi_id, ".", v), '...')
+  cat('Reading in ')
   v <- getPackageVersion(edi_id, site = site)
   id <- getEntityId(edi_id, v, site = site, datanum = datanum)
-  dat <- readr::read_csv(paste0("https://portal.edirepository.org/nis/dataviewer?packageid=knb-lter-", site, ".", edi_id, ".", v, 
-                         "&entityid=", id),
+  dat <- readr::read_csv(
+    paste0("https://pasta.lternet.edu/package/data/eml/knb-lter-", 
+      site, "/", edi_id, "/", v, "/", id),
                 trim_ws =TRUE, na = na_vals, col_types = col_class,
                 guess_max = 100000)
   dat <- as.data.frame(dat)
-  print(paste0("Reading in knb-lter-", site, ".", edi_id, ".", v))
+  cat('Done.\n')
   return(dat)
 }
