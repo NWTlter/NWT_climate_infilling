@@ -186,6 +186,8 @@ available_dataviz(tvan, timecol = "date",
 # prep function selects meteorological variables of interest, classes timestamps as POSIX, and pulls out dates and time separately from the timestamps
 # because data read in to a list, apply function to each element in list
 ameriflux_prepped <- lapply(ameriflux, prepAmeriflux)
+# sub-hourly flux data are read as character, so each copy is GBs; free as we go
+rm(ameriflux); gc()
 
 #' # visualize data available (missing/present) and data as read in (look for oddities and outliers)
 #' # because ameriflux data are sub-daily, plotting can take some time for stations that have fairly complete records for multiple variables
@@ -202,6 +204,7 @@ ameriflux_prepped <- lapply(ameriflux, prepAmeriflux)
 #' For sub-hourly data, the next step in prepping data for this workflow's QC is to aggregate sub-hourly to daily data, just for columns and sites of interest
 
 ameriflux_daily <- lapply(ameriflux_prepped, sub2daily)
+rm(ameriflux_prepped); gc()
 
 #' From here, review daily data to see what you'd like to keep for QC and possible use in infilling
 #' 
