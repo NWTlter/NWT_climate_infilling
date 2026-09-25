@@ -3,13 +3,13 @@
 # then the 3T_gapfill.R script.
 
 rm(list=ls())
-setwd(dirname(rstudioapi::getSourceEditorContext()$path))
+# run from the repo root, like the other Infilling_2025 scripts (paths below are repo-relative)
 
 library( tidyverse )
 
-out_dir <- "~/OneDrive - UCB-O365/NWT_Infilling_2024/plots/"
-datpath <- "~/OneDrive - UCB-O365/NWT_Infilling_2024/data/publish/"
-infill_path <- "~/OneDrive - UCB-O365/NWT_Infilling_2024/data/infill/"
+out_dir <- "daily_met/Infilling_2025/data/plots/"
+datpath <- "daily_met/Infilling_2025/data/publish/"
+infill_path <- "daily_met/Infilling_2025/data/infill/"
 
 ################################################################################
 # Reading in Data and Pivoting
@@ -55,9 +55,17 @@ d1_hmps <- alldats %>% dplyr::filter(local_site %in% c('d1_cr1000_hmp_1',
   filter(lubridate::year(date) > 2018) %>% 
   mutate(date = lubridate::date(date))
 
+# new D1 hv sensors from Sep 2025 (HMPs end Aug 2025)
+d1_hvs <- alldats %>% dplyr::filter(local_site %in% c('d1_cr1000_hv_1',
+                                                      'd1_cr1000_hv_2')) %>% 
+  spread(key = metric, value = measurement) %>% group_by(date) %>% 
+  dplyr::summarise(airtemp_avg = mean(airtemp_avg, na.rm = TRUE)) %>% 
+  mutate(date = lubridate::date(date))
+
+# c1 HMPs through 2023, aspirated sensors after
 c1_hmps <- alldats %>% dplyr::filter(
   local_site %in% (unique(local_site) |> 
-    grep("c1_cr1000_as|c1_cr1000_hmp", x=_, value = T))) %>% 
+    grep("c1_cr1000x?_as|c1_cr1000_hmp", x=_, value = T))) %>% 
   spread(key = metric, value = measurement) %>% group_by(date) %>% 
   dplyr::summarise(airtemp_avg = mean(airtemp_avg, na.rm = TRUE)) %>% 
   filter(lubridate::year(date) > 2018) %>% 
@@ -68,7 +76,7 @@ c1_hmps <- alldats %>% dplyr::filter(
 ################################################################################
 
 if(!dir.exists(paste0(out_dir,"qc/c1/temp"))){
-  dir.create((paste0(out_dir,"qc/c1/temp/")))
+  dir.create(paste0(out_dir,"qc/c1/temp/"), recursive = TRUE)
 }
 
 plot_out <- paste0(out_dir,"qc/c1/temp/")
@@ -78,6 +86,7 @@ for (col in c("airtemp_max", "airtemp_min", "airtemp_avg")){
   p <- ggplot()+
     geom_line(data = sdl_hmps, aes(date, airtemp_avg, color = 'sdl_hmps_mean'))+
     geom_line(data = d1_hmps, aes(date, airtemp_avg, color = 'd1_hmps_mean'))+
+    geom_line(data = d1_hvs, aes(date, airtemp_avg, color = 'd1_hvs_mean'))+
     geom_line(data = c1_chart_infilled |> filter( yr > 2018), 
               aes(date, .data[[col]], color = 'c1_chart_infilled'))+
     geom_point(data = c1_chart_infilled |>
@@ -85,18 +94,19 @@ for (col in c("airtemp_max", "airtemp_min", "airtemp_avg")){
                aes(date, .data[[col]], shape = .data[[paste0(col,"_method")]]),
                color = 'firebrick', size = 2)+
     theme(legend.position = 'bottom')+
+    guides(colour = guide_legend(nrow = 2))+
     ggtitle('C1 Infilled Cross Site Comparison')+
     scale_color_brewer(palette = 'Set2')+
     labs(y= col, x = 'Date')
   
-  ggsave(paste0(plot_out, col, "_c1_infilled_2024.png"), plot = p, device = 'png', height = 6, width=8)
+  ggsave(paste0(plot_out, col, "_c1_infilled_2025.png"), plot = p, device = 'png', height = 6, width=8)
   
   
 }
 
 #ppt
 if(!dir.exists(paste0(out_dir,"qc/c1/ppt"))){
-  dir.create((paste0(out_dir,"qc/c1/ppt/")))
+  dir.create(paste0(out_dir,"qc/c1/ppt/"), recursive = TRUE)
 }
 
 plot_out <- paste0(out_dir,"qc/c1/ppt/")
@@ -131,9 +141,9 @@ for (col in c("precip")){
     scale_color_brewer(palette = 'Set2')+
     labs(y= col, x = 'Date')
   
-  ggsave(paste0(plot_out, col, "_c1_ppt_infilled_2024.png"), plot = p, device = 'png', height = 6, width=8)
+  ggsave(paste0(plot_out, col, "_c1_ppt_infilled_2025.png"), plot = p, device = 'png', height = 6, width=8)
   
-  for (y in c(2024)){
+  for (y in c(2025)){
     p <- ggplot()+
       geom_line(data = d1_ppt |> filter( lubridate::year(date) == y),
                 aes(date, precip, color = 'd1_ppt'))+
@@ -185,7 +195,7 @@ for (col in c("precip")){
 ################################################################################
 
 if(!dir.exists(paste0(out_dir,"qc/d1/temp"))){
-  dir.create((paste0(out_dir,"qc/d1/temp")))
+  dir.create(paste0(out_dir,"qc/d1/temp"), recursive = TRUE)
 }
 
 plot_out <- paste0(out_dir,"qc/d1/temp")
@@ -195,7 +205,9 @@ for (col in c("airtemp_max", "airtemp_min", "airtemp_avg")){
   
   p <- ggplot()+
     geom_line(data = sdl_hmps, aes(date, airtemp_avg, color = 'sdl_hmps_mean'))+
-    geom_line(data = c1_hmps, aes(date, airtemp_avg, color = 'c1_hmps_mean'))+
+    geom_line(data = c1_hmps, aes(date, airtemp_avg, color = 'c1_logger_mean'))+
+    geom_line(data = d1_hmps, aes(date, airtemp_avg, color = 'd1_hmps_mean'))+
+    geom_line(data = d1_hvs, aes(date, airtemp_avg, color = 'd1_hvs_mean'))+
     geom_line(data = d1_chart_infilled |> filter( yr > 2018),
               aes(date, .data[[col]], color = 'd1_chart_infilled'))+
     geom_point(data = d1_chart_infilled |>
@@ -203,19 +215,20 @@ for (col in c("airtemp_max", "airtemp_min", "airtemp_avg")){
                aes(date, .data[[col]], shape = .data[[paste0(col,"_method")]]),
                color = 'firebrick', size = 2)+
     theme(legend.position = 'bottom')+
+    guides(colour = guide_legend(nrow = 2))+
     ggtitle('D1 Infilled Cross Site Comparison')+
-    xlim(lubridate::date("2023-01-01"), lubridate::date("2024-12-31"))+
+    xlim(lubridate::date("2024-01-01"), lubridate::date("2025-12-31"))+
     scale_color_brewer(palette = 'Set2')+
     labs(y= col, x = 'Date')
   
-  ggsave(paste0(plot_out, col, "_d1_infilled_2024.png"), plot = p, device = 'png', height = 6, width=8)
+  ggsave(paste0(plot_out, col, "_d1_infilled_2025.png"), plot = p, device = 'png', height = 6, width=8)
   
   
 }
 
 #ppt 
 if(!dir.exists(paste0(out_dir,"qc/d1/ppt"))){
-  dir.create((paste0(out_dir,"qc/d1/ppt")))
+  dir.create(paste0(out_dir,"qc/d1/ppt"), recursive = TRUE)
 }
 
 plot_out <- paste0(out_dir,"qc/d1/ppt")
@@ -234,13 +247,13 @@ for (col in c("precip")){
                color = 'red', size = 2)+
     theme(legend.position = 'bottom')+
     ggtitle('d1 PPT Infilled Cross Site Comparison')+
-    xlim(lubridate::date("2023-01-01"), lubridate::date("2024-12-31"))+
+    xlim(lubridate::date("2024-01-01"), lubridate::date("2025-12-31"))+
     scale_color_brewer(palette = 'Set2')+
     labs(y= col, x = 'Date')
   
-  ggsave(paste0(plot_out, col, "_d1_ppt_infilled_2024.png"), plot = p, device = 'png', height = 6, width=8)
+  ggsave(paste0(plot_out, col, "_d1_ppt_infilled_2025.png"), plot = p, device = 'png', height = 6, width=8)
   
-  for (y in c(2024)){
+  for (y in c(2025)){
     p <- ggplot()+
       geom_line(data = d1_ppt |> filter( lubridate::year(date) == y),
                 aes(date, precip, color = 'd1_ppt'))+
@@ -293,7 +306,7 @@ for (col in c("precip")){
 
 #temp
 if(!dir.exists(paste0(out_dir,"qc/sdl/temp"))){
-  dir.create((paste0(out_dir,"qc/sdl/temp")))
+  dir.create(paste0(out_dir,"qc/sdl/temp"), recursive = TRUE)
 }
 
 plot_out <- paste0(out_dir,"qc/sdl/temp/")
@@ -304,34 +317,36 @@ for (col in c("airtemp_max_homogenized", "airtemp_min_homogenized",
   
   p <- ggplot()+
     geom_line(data = d1_hmps, aes(date, airtemp_avg, color = 'd1_hmps_mean'))+
-    geom_line(data = c1_hmps, aes(date, airtemp_avg, color = 'c1_hmps_mean'))+
+    geom_line(data = d1_hvs, aes(date, airtemp_avg, color = 'd1_hvs_mean'))+
+    geom_line(data = c1_hmps, aes(date, airtemp_avg, color = 'c1_logger_mean'))+
     geom_line(data = sdl_homogenized |> filter( year > 2018),
               aes(date, .data[[col]], color = 'sdl_homogenized'))+
     geom_point(data = sdl_homogenized |>
                  dplyr::filter(year > 2018 & .data[['flag_1']] != 'AAA'),
                aes(date, .data[[col]], shape = .data[['flag_1']] == 'AAA'),
                color = 'red', size = 2)+
-    xlim(lubridate::date("2023-01-01"), lubridate::date("2024-12-31"))+
+    xlim(lubridate::date("2024-01-01"), lubridate::date("2025-12-31"))+
     theme(legend.position = 'bottom')+
+    guides(colour = guide_legend(nrow = 2))+
     
     ggtitle('SDL Homogenized / Infilled Cross Site Comparison')+
     scale_color_brewer(palette = 'Set2')+
     labs(y= col, x = 'Date')
   
-  ggsave(paste0(plot_out, col, "_sdl_infilled_2024.png"), plot = p, device = 'png', height = 6, width=8)
+  ggsave(paste0(plot_out, col, "_sdl_infilled_2025.png"), plot = p, device = 'png', height = 6, width=8)
   
 }
 
 # -
 # sdl hmps only (from homogenized dataset)
 if(!dir.exists(paste0(out_dir,"qc/sdl/hmps/"))){
-  dir.create((paste0(out_dir,"qc/sdl/hmps/")))
+  dir.create(paste0(out_dir,"qc/sdl/hmps/"), recursive = TRUE)
 }
 
 for (rep in 1:3){
   sensor = paste0('hmp',rep)
   if(!dir.exists(paste0(out_dir,"qc/sdl/hmps/hmp",rep,'/'))){
-    dir.create((paste0(out_dir,"qc/sdl/hmps/hmp",rep,'/')))
+    dir.create(paste0(out_dir,"qc/sdl/hmps/hmp",rep,'/'), recursive = TRUE)
   }
   
   plot_out <- paste0(out_dir,"qc/sdl/hmps/hmp",rep,'/')
@@ -341,12 +356,12 @@ for (rep in 1:3){
     
     print(paste('Plotting', col, '...'))
     
-    for (y in c(2023, 2024)){
+    for (y in c(2024, 2025)){
       p <- ggplot()+
         # geom_line(data = sdl_hmps |> filter( lubridate::year(date) == y),
         #           aes(date, airtemp_avg, color = 'sdl_hmps_mean'))+
         # geom_line(data = c1_hmps |> filter( lubridate::year(date) == y),
-        #           aes(date, airtemp_avg, color = 'c1_hmps_mean'))+
+        #           aes(date, airtemp_avg, color = 'c1_logger_mean'))+
         geom_line(data = sdl_homogenized |> filter( lubridate::year(date) == y), 
                   aes(date, .data[[col]]))+
         geom_point(data = sdl_homogenized |> filter(year  == y) |> 
@@ -368,7 +383,7 @@ for (rep in 1:3){
 
 # ppt
 if(!dir.exists(paste0(out_dir,"qc/sdl/ppt/"))){
-  dir.create((paste0(out_dir,"qc/sdl/ppt/")))
+  dir.create(paste0(out_dir,"qc/sdl/ppt/"), recursive = TRUE)
 }
 
 plot_out <- paste0(out_dir,"qc/sdl/ppt/")
@@ -377,7 +392,7 @@ for (col in c("precip")){
   
   
   
-  for (y in c(2024)){
+  for (y in c(2025)){
     p <- ggplot()+
       geom_line(data = d1_ppt |> filter( lubridate::year(date) == y),
                 aes(date, precip, color = 'd1_ppt'))+

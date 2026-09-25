@@ -49,6 +49,9 @@ nwtchart <- get_tidydat("nwtchartTemp_prep", rdsfiles, "*")
 ameriflux <- get_tidydat("ameri", rdsfiles, "airtemp")
 snotel <- get_tidydat("sno", rdsfiles, "airtemp")
 ghcnd <- get_tidydat("ghc", rdsfiles, c("temp", "TOBS"))
+# GHCN-Daily TMAX/TMIN/TOBS are stored in tenths of a degree C; convert to C like the other
+# temp sources (the QC limits below, e.g. -60..50, assume C)
+ghcnd$measurement <- ghcnd$measurement / 10
 
 # read in TK d1 and c1 temp
 tktemp <- getNWTchartsinfilled(mets = c("temp"))
@@ -261,6 +264,15 @@ ghcnd_out$local_site <- ghcnd_out$station_id
 ghcnd_out$local_site[grepl("116$", ghcnd_out$station_id) & ghcnd_out$date < switchdate] <- with(ghcnd_out, paste(unique(station_id[grepl("116$", ghcnd_out$station_id)]), "0700", sep = "_"))
 ghcnd_out$local_site[grepl("116$", ghcnd_out$station_id) & ghcnd_out$date >= switchdate] <- with(ghcnd_out, paste(unique(station_id[grepl("116$", ghcnd_out$station_id)]), "1600", sep = "_"))
 
+# USC00052761's whole record is dated one day late relative to calendar-day stations
+# (max, min and precip all align best with Boulder USW00094075 / Niwot SNOTEL / C1 when
+# shifted back 1 day; other co-op stations do not), so shift it back 1 day
+shift_1day <- ghcnd_out$local_site == "USC00052761"
+ghcnd_out$date[shift_1day] <- ghcnd_out$date[shift_1day] - 1
+ghcnd_out$yr[shift_1day] <- lubridate::year(ghcnd_out$date[shift_1day])
+ghcnd_out$mon[shift_1day] <- lubridate::month(ghcnd_out$date[shift_1day])
+ghcnd_out$doy[shift_1day] <- lubridate::yday(ghcnd_out$date[shift_1day])
+
 # be sure each station starts at it minimum start time
 for(s in unique(ghcnd_out$local_site)){
   mindate <- min(ghcnd_out$date[ghcnd_out$local_site == s & !is.na(ghcnd_out$raw)])
@@ -465,21 +477,26 @@ ghcnd <- get_tidydat("ghcndTEMP_qc", rdsfiles_qc, "*")
 allsites <- readRDS(rdsfiles_qc[grep("infoTEM", rdsfiles_qc)])
 
 # read in previously QC'd dats (from 2018 renewal)
-# set pathway to long-term-trends repo (here previously qc'd data live)
-lttrepo <- "../long-term-trends/"
-qcdat <- "output_data/prep_data"
-qcc1d1 <- list.files(paste0(lttrepo, "climate_d1_c1/", qcdat), full.names = T)
-qcsdl <- list.files(paste0(lttrepo, "extended_summer/analysis/", qcdat), full.names = T)
+# copies of the needed files from the long-term-trends repo live in this repo
+# (see long-term-trends-data-copy/README.md for where they came from)
+lttcopy <- "daily_met/Infilling_2025/long-term-trends-data-copy/"
+qcc1d1 <- paste0(lttcopy, "climate_d1_c1/",
+                 c("qa_d1cr_temp.csv", "qa_c1cr_temp.csv", "qa_d1_temp.csv", "qa_c1_temp.csv"))
+qcsdl <- paste0(lttcopy, "extended_summer/", c("qa_sdlcr_temp.csv", "qa_sdlchart_temp.csv"))
+missing_ltt <- c(qcc1d1, qcsdl)[!file.exists(c(qcc1d1, qcsdl))]
+if (length(missing_ltt) > 0) {
+  stop("Missing long-term-trends QC files:\n  ", paste(missing_ltt, collapse = "\n  "))
+}
 
 # loggers qc'd
-qc_d1cr <- read_csv(qcc1d1[grep("d1cr", qcc1d1)]) %>% data.frame()
-qc_c1cr <- read_csv(qcc1d1[grep("c1cr", qcc1d1)]) %>% data.frame()
-qc_sdlcr <- read_csv(qcsdl[grep("sdlcr_temp[.]", qcsdl)]) %>% data.frame()
+qc_d1cr <- read_csv(qcc1d1[1]) %>% data.frame()
+qc_c1cr <- read_csv(qcc1d1[2]) %>% data.frame()
+qc_sdlcr <- read_csv(qcsdl[1]) %>% data.frame()
 
 # charts qc'd
-qc_d1 <- read_csv(qcc1d1[grep("d1_te", qcc1d1)]) %>% data.frame()
-qc_c1 <- read_csv(qcc1d1[grep("c1_te", qcc1d1)]) %>% data.frame()
-qc_sdl <- read_csv(qcsdl[grep("sdlchart", qcsdl)]) %>% data.frame()
+qc_d1 <- read_csv(qcc1d1[3]) %>% data.frame()
+qc_c1 <- read_csv(qcc1d1[4]) %>% data.frame()
+qc_sdl <- read_csv(qcsdl[2]) %>% data.frame()
 
 
 # Caitlin was using some of the processed data from the long-term-trends repository
@@ -558,8 +575,9 @@ logger_prep <- rbind(subset(qc_c1cr, select = c(LTER_site:met, qa_temp, qa_flag)
   unite(local_site, local_site, logger, sep = "_")
 # hmps at d1, c1 and sdl after these
 
-# pull gl4 and hmps from logtemp (needs qc) -- and also d1_cr1000 for the year 2019 (still ran)
-hmp_prep <- subset(logtemp, grepl("hmp|_as", local_site) | (yr > 2018 & grepl("d1_cr1000$", local_site)))
+# pull gl4 and hmps (+ d1 hv sensors from Sep 2025) from logtemp (needs qc) -- and also d1_cr1000 for the year 2019 (still ran)
+# (yr == 2019 to match the 2019 exclusion from logtemp_qc below; yr > 2018 double-counted d1_cr1000 2020+)
+hmp_prep <- subset(logtemp, grepl("hmp|_as|_hv", local_site) | (yr == 2019 & grepl("d1_cr1000$", local_site)))
 gl4_prep <- subset(logtemp, grepl("gl4", station_name))
 
 # -- QUICK QC ALL DATA ----
@@ -790,6 +808,10 @@ snotel_dailysds$qcflag[snotel_dailysds$flag_avg] <- TRUE
 # remove niwot tmax july 2005 through all of feb 2007 (manual review)
 # uc: tmax errors may 2010 through sep 1 2011
 snotel_dailysds$qcflag[grepl("Uni", snotel_dailysds$local_site) & snotel_dailysds$measurement > 27 & !is.na(snotel_dailysds$measurement)] <- TRUE
+# carry the sensor_fail windows above through to the output: they only NA'd measurement in
+# this working copy, and only qcflag is joined back onto snotel (below), so without this
+# those tmax values survived into snotelTEMP_ready
+snotel_dailysds$qcflag[snotel_dailysds$sensor_fail] <- TRUE
 
 
 # -- quick qc ghcnd -----
@@ -934,14 +956,14 @@ ghcnd <- left_join(ghcnd, ghcnd_dailysds[c("date", "local_site", "metric", "qcfl
 ghcnd$measurement[ghcnd$qcflag & !is.na(ghcnd$qcflag)] <- NA
 
 ameriflux <- left_join(ameriflux, amerigl4_dailysds[c("date", "local_site", "metric", "qcflag")])
-amerigl4$measurement[amerigl4$qcflag & !is.na(amerigl4$qcflag)] <- NA
+ameriflux$measurement[ameriflux$qcflag & !is.na(ameriflux$qcflag)] <- NA
 
 gl4_prep <- left_join(gl4_prep, amerigl4_dailysds[c("date", "local_site", "metric", "qcflag")])
 gl4_prep$measurement[gl4_prep$qcflag & !is.na(gl4_prep$qcflag)] <- NA
 
 # add quick-qc'd gl4 and hmps to previously qc'd sdl, c1, and d1
 hmpgl4d1cr_qc <- rbind(hmp_prep, gl4_prep)
-logtemp_qc <- subset(logtemp, !local_site %in% unique(logtemp$local_site[grepl("hmp|gl4", logtemp$local_site)])) %>%
+logtemp_qc <- subset(logtemp, !local_site %in% unique(logtemp$local_site[grepl("hmp|gl4|_hv", logtemp$local_site)])) %>%
   # but remove d1_cr1000 2019 since that is in nwtlog_qc
   subset(!(local_site == "d1_cr1000" & yr == 2019)) %>%
   left_join(logger_prep) %>% # i only qc'd max and min :( .. NA the day's avg if one of those is off

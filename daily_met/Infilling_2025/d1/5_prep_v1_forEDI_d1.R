@@ -16,7 +16,7 @@ source("daily_met/R/fetch_data_functions.R")
 options(stringsAsFactors = FALSE)
 
 #Path to where data have been written to
-datpath <- "~/OneDrive - UCB-O365/NWT_Infilling_2024/data/"
+datpath <- "daily_met/Infilling_2025/data/"
 rdsfiles <- list.files(paste0(datpath), pattern = "rds", full.names = T, recursive = TRUE)
 
 ################################################################################
@@ -54,27 +54,17 @@ tkd1_ppt <- getTabular(186)
 jennings <- getTabular(168)
 
 # Read in currently posted temp version for aligning
-inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-nwt/187/4/7d83b12a87738a45084d2f04d9256051" 
-infile1 <- tempfile()
-try(download.file(inUrl1,infile1,method="curl"))
-if (is.na(file.size(infile1))) download.file(inUrl1,infile1,method="auto")
-
-posted_temp <-read.csv(infile1) |> 
+# (newest revision via EDIutils; pinned pasta URLs to old revisions now return HTTP 403)
+posted_temp <- getTabular(187) |> 
   dplyr::mutate(
     max_temp = as.numeric(max_temp),
     min_temp = as.numeric(min_temp),
     DTR = as.numeric(DTR)
   )
-unlink(infile1)
 
 # Read in currently posted ppt version for aligning
-inUrl1  <- "https://pasta.lternet.edu/package/data/eml/knb-lter-nwt/186/5/e59295299fd2e7fbf748712f9b6851f5" 
-infile1 <- tempfile()
-try(download.file(inUrl1,infile1,method="curl"))
-if (is.na(file.size(infile1))) download.file(inUrl1,infile1,method="auto")
-
-posted_ppt <-read.csv(infile1)
-unlink(infile1)
+# (newest revision via EDIutils; pinned pasta URLs to old revisions now return HTTP 403)
+posted_ppt <- getTabular(186)
 
 ################################################################################
 # Notes RE: flags and naming conventions

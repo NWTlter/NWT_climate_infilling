@@ -60,7 +60,9 @@ ghcnd_lm <- mean_and_diurnalT(subset(ghcnd_ready, metric != "TOBS"))
 
 # need date, yr, mon, doy, local_site, and measurement (qc'd)
 alldats <- rbind(charttemp_lm, nwtlog_lm, snotel_lm, ameriflux_lm, ghcnd_lm) %>%
-  subset(grepl("avg|DTR", metric)) %>%
+  # exact match: grepl("avg|DTR") also kept the all-NA airtemp_s_avg logger metric, which made
+  # tk_temp_historicfill skip every NWT logger site (its NA check greps all of a site's columns)
+  subset(metric %in% c("airtemp_avg", "DTR")) %>%
   arrange(local_site, date, metric)
 
 # make sure allsites ordered by pair rank
@@ -113,7 +115,7 @@ ggplot(c1_chart_predicted |> dplyr::filter(yr > 2020))+
             aes(date, measurement, color = 'sdl_cr1000_hmp_2'), alpha = 0.8)+
   geom_line(aes(date, airtemp_avg, color = 'c1_chart'))+
   scale_color_manual(values = c('firebrick', 'black', 'black'))+
-  xlim(c(lubridate::date("2020-01-01"), lubridate::date("2024-12-31")))+
+  xlim(c(lubridate::date("2020-01-01"), lubridate::date("2025-12-31")))+
   theme(legend.position = 'bottom')+
   labs(y='TempC', x = 'Date')+
   ggtitle('Gapfilled C1 Hygrothermagraph with D1 and Sdl Logger Raw')
@@ -155,7 +157,7 @@ ggplot(d1_chart_predicted |> dplyr::filter(yr > 2020))+
             aes(date, measurement, color = 'sdl_cr1000_hmp_2'), alpha = 0.8)+
   geom_line(aes(date, airtemp_avg, color = 'd1_chart'))+
   scale_color_manual(values = c('firebrick', 'black', 'black'))+
-  xlim(c(lubridate::date("2020-01-01"), lubridate::date("2024-12-31")))+
+  xlim(c(lubridate::date("2020-01-01"), lubridate::date("2025-12-31")))+
   theme(legend.position = 'bottom')+
   labs(y='TempC', x = 'Date')+
   ggtitle('Gapfilled d1 Hygrothermagraph with D1 and Sdl Logger Raw')
@@ -205,16 +207,16 @@ sdl1000_hmp_2_predicted <- calculate_minmax(select_sdl1000_hmp_2, allnwtlog_read
 
 
 # how does it look?
-ggplot(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2024)) +
+ggplot(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2025)) +
   #geom_vline(aes(xintercept = as.Date("1989-01-01"))) +
   geom_line(aes(date, airtemp_avg), col = "green", alpha = 0.3) +
   geom_line(aes(date, airtemp_max), col = "purple", alpha = 0.3) +
-  geom_point(data = subset(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2024), airtemp_max_method != "raw"), aes(date, airtemp_max), col = "red", alpha = 0.5) +
+  geom_point(data = subset(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2025), airtemp_max_method != "raw"), aes(date, airtemp_max), col = "red", alpha = 0.5) +
   geom_line(aes(date, airtemp_min), col = "blue", alpha = 0.3) +
-  geom_point(data = subset(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2024), airtemp_min_method != "raw"), aes(date, airtemp_min), col = "dodgerblue", alpha = 0.5) +
-  geom_point(data = subset(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2024), flagmin), aes(date, airtemp_min), size = 2, col = "blue", alpha = 0.8) +
-  geom_point(data = subset(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2024), flagmin), aes(date, airtemp_avg), size = 2, col = "forestgreen", alpha = 0.8) +
-  geom_point(data = subset(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2024), flagmin), aes(date, airtemp_max), size = 2, col = "chocolate", alpha = 0.8) # only 1 dat
+  geom_point(data = subset(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2025), airtemp_min_method != "raw"), aes(date, airtemp_min), col = "dodgerblue", alpha = 0.5) +
+  geom_point(data = subset(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2025), flagmin), aes(date, airtemp_min), size = 2, col = "blue", alpha = 0.8) +
+  geom_point(data = subset(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2025), flagmin), aes(date, airtemp_avg), size = 2, col = "forestgreen", alpha = 0.8) +
+  geom_point(data = subset(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2025), flagmin), aes(date, airtemp_max), size = 2, col = "chocolate", alpha = 0.8) # only 1 dat
 
 
 
@@ -263,6 +265,6 @@ write.csv(d1_chart_predicted, file = paste0(datpath,"infill/d1_chart_infilled_v1
 write.csv(sdl_hmps_predicted, file = paste0(datpath,"infill/sdl_hmps_infilled_v1.csv"),
           row.names = FALSE)
 
-saveRDS(sdl_hmps_predicted, paste0(datpath,"infill/sdlhmp_infilled_2024.rds"))
+saveRDS(sdl_hmps_predicted, paste0(datpath,"infill/sdlhmp_infilled_2025.rds"))
 saveRDS(c1_chart_predicted, paste0(datpath,"infill/c1_chart_infilled_v1.rds"))
 saveRDS(d1_chart_predicted, paste0(datpath,"infill/d1_chart_infilled_v1.rds"))

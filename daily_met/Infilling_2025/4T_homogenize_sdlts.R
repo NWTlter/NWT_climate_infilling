@@ -25,7 +25,7 @@ rdsfiles <- list.files(paste0(datpath), pattern = "rds", full.names = T, recursi
 
 # read in infilled sdl temp data
 # sdlchart_pred <- readRDS(rdsfiles[grepl("sdl_chart_infill", rdsfiles)])
-sdlhmp_pred <- readRDS(rdsfiles[grepl("sdlhmp_infilled_2024", rdsfiles)])
+sdlhmp_pred <- readRDS(rdsfiles[grepl("sdlhmp_infilled_2025", rdsfiles)])
 nwtlog_qc <- readRDS(rdsfiles[grepl("nwtloggerTEMP_ready", rdsfiles)])
 
 # -- AVERAGE HMP PERIOD ----

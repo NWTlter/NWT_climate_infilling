@@ -50,7 +50,7 @@ create_subfolders <- function(datpath, subfolders) {
     }
   }
 }
-create_subfolders(datpath, c("prep", "qc", "infill", "homogenize"))
+create_subfolders(datpath, c("prep", "qc", "infill", "homogenize", "publish", "plots"))
 
 # Read in dynamic datasets
 snotel <- getSnotelNeighbors()
@@ -162,7 +162,7 @@ clean_npn <- npn |>
     local_site = 'NPN',
     metric = 'ppt_tot',
     flag_ppt_tot = 'n',
-    measurement = measurement * 2.54 #convert to cm
+    measurement = measurement * 25.4 # convert inches to mm (same units as other precip sources)
 ) |> select(names(c1loggerPPT_out))
 
 c1loggerPPT_out <- bind_rows(c1loggerPPT_out, clean_npn) # Join ETI gauge to loggers

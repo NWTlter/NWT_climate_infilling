@@ -15,7 +15,7 @@ source("daily_met/R/fetch_data_functions.R")
 options(stringsAsFactors = FALSE)
 
 #Path to where data have been written to
-datpath <- "~/OneDrive - UCB-O365/NWT_Infilling_2024/data/"
+datpath <- "daily_met/Infilling_2025/data/"
 
 ################################################################################
 # Read in data 

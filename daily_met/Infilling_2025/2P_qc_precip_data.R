@@ -163,6 +163,8 @@ chartppt_out_qc <- left_join(chartppt_out, tkflagged[c("date", "local_site", "pr
 # -- 1. GHCNd -----
 # limit other dat by starting date of nwt chart data
 ghcnd_out <- subset(ghcnd, date >= min(chartppt_out_qc$date))
+# GHCN-Daily PRCP is stored in tenths of mm; convert to mm like the other precip sources
+ghcnd_out$measurement <- ghcnd_out$measurement / 10
 # in ghcnd want to check if time of observation influences measurement trend at all (shouldn't for ppt)
 
 # check for time change at stations
@@ -249,6 +251,15 @@ ghcnd_out$qc_note[grepl("116$", ghcnd_out$station_id) & ghcnd_out$date == switch
 ghcnd_out$local_site <- ghcnd_out$station_id
 ghcnd_out$local_site[grepl("116$", ghcnd_out$station_id) & ghcnd_out$date < switchdate] <- with(ghcnd_out, paste(unique(station_id[grepl("116$", ghcnd_out$station_id)]), "0700", sep = "_"))
 ghcnd_out$local_site[grepl("116$", ghcnd_out$station_id) & ghcnd_out$date >= switchdate] <- with(ghcnd_out, paste(unique(station_id[grepl("116$", ghcnd_out$station_id)]), time_observed[grepl("116$", station_id) & date == switchdate], sep = "_"))
+
+# USC00052761's whole record is dated one day late relative to calendar-day stations
+# (max, min and precip all align best with Boulder USW00094075 / Niwot SNOTEL / C1 when
+# shifted back 1 day; other co-op stations do not), so shift it back 1 day
+shift_1day <- ghcnd_out$local_site == "USC00052761"
+ghcnd_out$date[shift_1day] <- ghcnd_out$date[shift_1day] - 1
+ghcnd_out$yr[shift_1day] <- lubridate::year(ghcnd_out$date[shift_1day])
+ghcnd_out$mon[shift_1day] <- lubridate::month(ghcnd_out$date[shift_1day])
+ghcnd_out$doy[shift_1day] <- lubridate::yday(ghcnd_out$date[shift_1day])
 
 
 # -- 2. SNOTEL ------

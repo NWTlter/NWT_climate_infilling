@@ -82,19 +82,82 @@ that helper is shared by the 2022/2023/2024 scripts — unclear whether the
 character read is deliberate (preserving flag columns / avoiding type coercion).
 Not changed for that reason. Worth deciding before running on a small machine.
 
-## 6. Status: script runs clean
+## 6. Status: full workflow runs clean
 
-With sections 1, 2 and 4 in place, `1_prepare_climate_data.R` ran end to end
-(exit 0, no errors, ~5 min, ~2.7 GB peak RSS) and wrote all 14 expected outputs
-to `data/prep/` (7 datasets, `.csv` + `.rds` each):
+All scripts run end to end from the repo root (exit 0):
 
-```
-ameriflux_prep  c1loggerPPT_prep  ghcnd_prep  nwtchartPPT_prep
-nwtchartTemp_prep  nwtloggerTemp_prep  snotel_prep
-```
+| Script | Runtime | Output |
+|---|---|---|
+| `1_prepare_climate_data.R` | ~5 min, ~2.7 GB | `data/prep/` |
+| `2T_qc_temp_data.R` | ~40 s | `data/qc/*TEMP_qc.rds`, `*TEMP_ready.rds` |
+| `2P_qc_precip_data.R` | ~30 s | `data/qc/*PPT_qc.rds` |
+| `3P_gapfill_precip.R` | ~14 min | `data/infill/*PPT_infilled_draft.*` |
+| `3T_gapfill.R` | ~8 min | `data/infill/*_chart_infilled_v1.*`, `sdlhmp_infilled_2025.rds` |
+| `4T_homogenize_sdlts.R` | ~3 s | `data/homogenize/` |
+| `5_prep_v1_forEDI.R`, `c1/`, `d1/` | ~25 s each | `data/publish/*_gapfilled_ongoing.csv` |
+| `infilled_viz_check.R` | ~25 s | `data/plots/qc/` |
 
-Not yet reviewed: whether those values are scientifically correct. Only that the
-script completes. Scripts 2T/2P onward have not been run.
+Changes needed to get there (beyond sections 1, 2 and 4):
+
+- `geodist` must be installed from CRAN (used by 2T).
+- 2T reads six previously QC'd files from the `long-term-trends` repo. They are now
+  copied into `long-term-trends-data-copy/` (see its README) and committed via a
+  `.gitignore` exception, so no sibling repo is needed.
+- New D1 temperature sensors (`airtemp_hv1_*`, `airtemp_hv2_*`, from 2025-09-10)
+  are split into sites `d1_cr1000_hv_1` / `_hv_2` by `tidytemp()` in
+  `R/prep_data_functions.R`, and handled like HMPs in 2T.
+- 2T double-counted `d1_cr1000` from 2020 on (`yr > 2018` vs `yr == 2019` in two
+  filters), crashing once EDI added 2020+ rows; fixed to `yr == 2019`.
+- C1/D1 step-5 scripts downloaded pinned old EDI revisions by URL; those now return
+  HTTP 403, so they use `getTabular()` (newest revision) instead.
+- 3T kept any metric matching `"avg|DTR"`, which let an all-NA `airtemp_s_avg` logger
+  metric into `alldats`. `tk_temp_historicfill()` skips a candidate if any of its
+  columns is NA on the target date, so the multi-year method silently excluded every
+  NWT logger (HMPs, aspirated, hv, CRs). Now filtered to exactly `airtemp_avg`/`DTR`;
+  e.g. SDL hmp_3 went from 56 to 670 of 671 days infilled from on-site sensors.
+- GHCN co-op station USC00052761's whole record (temp max/min and precip) is dated
+  one day late relative to calendar-day stations (r2 vs Boulder max 0.958 shifted
+  vs 0.806 as dated). 2T and 2P now shift it back 1 day. The other co-op stations
+  (USC00053496, USC00053116_1600, USC00053500) look like afternoon observers: max
+  aligned, min partly a day late; left unshifted on purpose. `time_observed` is empty
+  for temperature, so observation times could not be confirmed. The station ends
+  Jan 2021, so published (2022+) outputs are unaffected.
+- Units: GHCN-Daily stores PRCP in tenths of mm and TMAX/TMIN/TOBS in tenths of C
+  (the NCEI "access" CSVs used by `fetchGHCND()` since 2024; CTW's original CDO
+  downloads were metric). 2P and 2T now divide by 10 on read. NPN (ETI gauge) was
+  converted inches -> cm in script 1; now inches -> mm. Converting precip changed
+  results: 2P's cross-station check pools all stations into one z-score, so ~128
+  lone large Saddle days (1985-2026) are now flagged and infilled (e.g. 127 mm on
+  2019-01-22 -> 10.8 mm); 18 D1 days and 1 C1 day also changed.
+- 2T SNOTEL QC: CTW's manual sensor-failure windows (Niwot tmax 2005-06-01..2007-02-01,
+  University Camp tmax 2010-05-01..2011-09-01) only NA'd a working copy; only `qcflag`
+  is joined back, so ~970 bad values survived. `sensor_fail` now sets `qcflag`.
+- 2T AmeriFlux QC: flags were applied to `amerigl4` instead of `ameriflux` (typo); fixed.
+- Review plots (not part of the pipeline, run after 2T/2P):
+  `qc_review_suspect_periods.R` -> `data/plots/qc_review/` (Niwot/Univ Camp SNOTEL,
+  D1 HMPs Jul 2018-Mar 2019, still undecided); `qc_2025_sources.R` ->
+  `data/plots/qc_2025/` (each 2025 source vs own-site others, C1/D1 means, Boulder 14 W
+  and Daymet, against its usual 2018-2024 monthly offset; precip cumulative ratios).
+  Daymet downloads are cached in `data/raw/Daymet/`.
+- C1 aspirated sensors on the CR1000X (2025+, `c1_cr1000x_asp_N`) are deliberately
+  kept as separate sites from the CR1000 ones (`c1_cr1000_asp_N`), per decision on
+  2026-09-24; they will build multi-year history on their own.
+- All OneDrive paths and `2024` output names now point at `data/` / `2025`;
+  script 1 also creates `data/publish/` and `data/plots/`.
+
+Not changed on purpose:
+
+- C1 temp output keeps the odd names `..._regression_regression_equation` and
+  `infill_QAnote`, and both C1/D1 temp keep `raw_Tmean`: the NWT_metadata
+  reformat scripts (`project.185`, `project.187`) expect and fix exactly these.
+- Publish-window filters in step 5 (`year >= 2023` for SDL, `yr > 2021` for C1/D1)
+  are unchanged; outputs run into 2026 (partial year), so clip as needed in the
+  NWT_metadata reformat step.
+
+Not yet reviewed: whether the infilled values are scientifically correct.
+
+Running non-interactively: 2T/2P call `View()`, which needs stubbing (e.g.
+`View <- function(...) invisible(NULL)`) when run via `Rscript`.
 
 ## 7. Runtime notes
 
