@@ -34,6 +34,29 @@ metric_lab <- c(airtemp_max = "Daily max", airtemp_min = "Daily min")
 
 # reference categorical palette, in its fixed (CVD-validated) slot order
 pal <- c("#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300")
+# styles by role: suspect series get the first palette slots AND distinct line types (so
+# series that read nearly the same, e.g. the three D1 HMPs, stay visible when overlapping);
+# references are neutral: Boulder 14 W always black, others dark then light gray.
+series_style <- function(suspects, refs) {
+  ref_other <- setdiff(refs, ref_site)
+  sites <- c(suspects, refs)
+  col <- c(setNames(pal[seq_along(suspects)], suspects), setNames("black", ref_site),
+           setNames(c("grey45", "grey70")[seq_along(ref_other)], ref_other))[sites]
+  lty <- c(setNames(c("solid", "dashed", "dotted")[seq_along(suspects)], suspects),
+           setNames("solid", ref_site), setNames(c("solid", "longdash")[seq_along(ref_other)], ref_other))[sites]
+  lwd <- ifelse(sites %in% suspects, 0.75, 0.5)
+  list(col = setNames(unname(col), pretty[sites]), lty = setNames(unname(lty), pretty[sites]),
+       lwd = setNames(lwd, pretty[sites]), levels = pretty[sites])
+}
+# drawing order: references first, then suspects 1, 2, 3 -- so dashed/dotted suspects sit on
+# top of the solid one and it shows through their gaps
+draw_order <- function(st, suspects) c(setdiff(st$levels, pretty[suspects]), pretty[suspects])
+style_scales <- function(st) list(
+  scale_colour_manual(values = st$col, name = NULL, drop = TRUE),
+  scale_linetype_manual(values = st$lty, name = NULL, drop = TRUE),
+  scale_linewidth_manual(values = st$lwd, guide = "none"),
+  guides(colour = guide_legend(nrow = 1, byrow = TRUE, override.aes = list(linewidth = 1.1)),
+         linetype = guide_legend(nrow = 1, byrow = TRUE)))
 
 roll <- function(x, k) as.numeric(stats::filter(x, rep(1 / k, k), sides = 2))
 # centred running mean that skips NAs; NA where fewer than min_n values in the window
@@ -68,7 +91,7 @@ runs <- function(fl) {
 case_plot <- function(title, suspects, refs, from, to, file) {
   from <- as.Date(from); to <- as.Date(to)
   sites <- c(suspects, refs)
-  cols <- setNames(pal[seq_along(sites)], pretty[sites])
+  st <- series_style(suspects, refs)
 
   top <- temps |> filter(local_site %in% sites, date >= from - 30, date <= to + 30) |>
     group_by(local_site, metric) |> arrange(date) |>
@@ -85,25 +108,27 @@ case_plot <- function(title, suspects, refs, from, to, file) {
   shade <- fl |> group_by(series, metric) |> group_modify(~runs(.x)) |> ungroup()
   shade_any <- shade |> distinct(metric, start, end)
 
-  p1 <- ggplot(top, aes(date, smooth, colour = series)) +
+  p1 <- ggplot(top, aes(date, smooth, colour = series, linetype = series, linewidth = series,
+                        group = factor(series, levels = draw_order(st, suspects)))) +
     geom_rect(data = shade_any, aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
-              inherit.aes = FALSE, fill = "grey85", alpha = 0.6) +
-    geom_line(linewidth = 0.5) +
+              inherit.aes = FALSE, fill = "grey90", alpha = 0.6) +
+    geom_line(na.rm = TRUE) +
     facet_wrap(~metric, ncol = 1) +
-    scale_colour_manual(values = cols, name = NULL) +
-    labs(title = title, subtitle = "7-day running mean. Grey = flagged: >= 20% of days in a 30-day window are > 5 C off the usual difference from Boulder 14 W",
+    style_scales(st) +
+    labs(title = title, subtitle = paste0("7-day running mean. Colored = suspect series (overlapping ones show through as dashed/dotted); ",
+                                          "black/gray = references.\nGray shading = flagged: >= 20% of days in a 30-day window are > 5 C off the usual difference from Boulder 14 W"),
          x = NULL, y = "Air temperature (C)") +
-    theme_minimal(base_size = 11) + theme(legend.position = "top", panel.grid.minor = element_blank(), legend.spacing.x = unit(0.6, "cm")) +
-    guides(colour = guide_legend(nrow = 1, byrow = TRUE, override.aes = list(linewidth = 1.5)))
+    theme_minimal(base_size = 11) + theme(legend.position = "top", panel.grid.minor = element_blank(),
+                                          legend.key.width = unit(1.4, "cm"), legend.spacing.x = unit(0.4, "cm"))
 
   p2 <- ggplot(fl, aes(date, diff, colour = series)) +
     geom_rect(data = shade_any, aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf),
-              inherit.aes = FALSE, fill = "grey85", alpha = 0.6) +
+              inherit.aes = FALSE, fill = "grey90", alpha = 0.6) +
     geom_hline(aes(yintercept = usual, colour = series), linetype = "dashed", linewidth = 0.4) +
     geom_point(size = 0.5, alpha = 0.35) +
-    geom_line(aes(y = diff30), linewidth = 0.7) +
+    geom_line(aes(y = diff30, linetype = series, linewidth = series), na.rm = TRUE) +
     facet_wrap(~metric, ncol = 1) +
-    scale_colour_manual(values = cols, name = NULL, drop = TRUE) +
+    style_scales(st) +
     labs(subtitle = "Daily difference from Boulder 14 W (points), 30-day running mean (line), usual offset (dashed)",
          x = NULL, y = "Suspect - Boulder 14 W (C)") +
     theme_minimal(base_size = 11) + theme(legend.position = "none", panel.grid.minor = element_blank())
@@ -114,20 +139,25 @@ case_plot <- function(title, suspects, refs, from, to, file) {
 }
 
 # zoom on the start/end of a flagged period with daily values, to pick exact dates
-zoom_plot <- function(title, sites, centre, file, halfwidth = 30) {
+zoom_plot <- function(title, suspects, refs, centre, file, halfwidth = 30) {
   centre <- as.Date(centre)
-  cols <- setNames(pal[seq_along(sites)], pretty[sites])
+  sites <- c(suspects, refs)
+  st <- series_style(suspects, refs)
   d <- temps |> filter(local_site %in% sites, date >= centre - halfwidth, date <= centre + halfwidth) |>
     mutate(series = factor(pretty[local_site], levels = pretty[sites]), metric = metric_lab[metric])
-  p <- ggplot(d, aes(date, measurement, colour = series)) +
+  p <- ggplot(d, aes(date, measurement, colour = series, linetype = series, linewidth = series,
+                     group = factor(series, levels = draw_order(st, suspects)))) +
     geom_vline(xintercept = centre, linetype = "dotted", colour = "grey40") +
-    geom_line(linewidth = 0.5) + geom_point(size = 1.2) +
+    geom_line() + geom_point(aes(shape = series), size = 1.3) +
+    scale_shape_manual(values = setNames(c(16, 17, 15, 1, 2, 0)[seq_along(sites)], pretty[sites]), name = NULL) +
     facet_wrap(~metric, ncol = 1) +
     scale_x_date(date_breaks = "1 week", date_labels = "%b %d\n%Y") +
-    scale_colour_manual(values = cols, name = NULL) +
-    labs(title = title, subtitle = paste("Daily values; dotted line =", format(centre)), x = NULL, y = "Air temperature (C)") +
-    theme_minimal(base_size = 11) + theme(legend.position = "top", panel.grid.minor = element_blank(), legend.spacing.x = unit(0.6, "cm")) +
-    guides(colour = guide_legend(nrow = 1, byrow = TRUE, override.aes = list(linewidth = 1.5)))
+    style_scales(st) +
+    labs(title = title, subtitle = paste("Daily values; dotted vertical line =", format(centre),
+                                         "\nColored = suspect series (filled markers); black/gray = references (open markers)"),
+         x = NULL, y = "Air temperature (C)") +
+    theme_minimal(base_size = 11) + theme(legend.position = "top", panel.grid.minor = element_blank(),
+                                          legend.key.width = unit(1.4, "cm"), legend.spacing.x = unit(0.4, "cm"))
   ggsave(paste0(out_dir, file), p, width = 11, height = 7, dpi = 130, bg = "white")
 }
 
@@ -145,14 +175,15 @@ flags <- bind_rows(
 # (the automatic flag is fooled by D1's seasonal inversion offset in daily min).
 # Edit these dates to re-zoom.
 zooms <- tribble(
-  ~name,      ~title,                           ~sites,                                                                                 ~start,       ~end,
-  "niwot",    "Niwot SNOTEL",                   list(c("Niwot", "USW00094075", "UniversityCamp")),                                     "2005-07-19", "2007-03-10",
-  "univcamp", "University Camp SNOTEL",         list(c("UniversityCamp", "USW00094075", "Niwot")),                                     "2010-05-01", "2011-07-20",
-  "d1_hmps",  "D1 HMPs vs D1 chart",            list(c("d1_cr1000_hmp_1", "d1_cr1000_hmp_2", "d1_cr1000_hmp_3", "d1_chart", "USW00094075")), "2018-07-25", "2019-04-05"
+  ~name,      ~title,                   ~suspects,                                                      ~refs,                                    ~start,       ~end,
+  "niwot",    "Niwot SNOTEL",           list("Niwot"),                                                  list(c("USW00094075", "UniversityCamp")), "2005-07-19", "2007-03-10",
+  "univcamp", "University Camp SNOTEL", list("UniversityCamp"),                                         list(c("USW00094075", "Niwot")),          "2010-05-01", "2011-07-20",
+  "d1_hmps",  "D1 HMPs vs D1 chart",    list(c("d1_cr1000_hmp_1", "d1_cr1000_hmp_2", "d1_cr1000_hmp_3")), list(c("d1_chart", "USW00094075")),     "2018-07-25", "2019-04-05"
 )
 for (i in seq_len(nrow(zooms))) {
-  zoom_plot(paste(zooms$title[i], "- start of suspect period"), unlist(zooms$sites[[i]]), zooms$start[i], paste0("zoom_", zooms$name[i], "_start.png"))
-  zoom_plot(paste(zooms$title[i], "- end of suspect period"), unlist(zooms$sites[[i]]), zooms$end[i], paste0("zoom_", zooms$name[i], "_end.png"))
+  sus <- unlist(zooms$suspects[[i]]); rf <- unlist(zooms$refs[[i]])
+  zoom_plot(paste(zooms$title[i], "- start of suspect period"), sus, rf, zooms$start[i], paste0("zoom_", zooms$name[i], "_start.png"))
+  zoom_plot(paste(zooms$title[i], "- end of suspect period"), sus, rf, zooms$end[i], paste0("zoom_", zooms$name[i], "_end.png"))
 }
 
 write_csv(flags |> select(case, series, metric, start, end, days), paste0(out_dir, "flagged_periods.csv"))

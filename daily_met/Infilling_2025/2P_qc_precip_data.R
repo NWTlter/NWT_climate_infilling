@@ -325,6 +325,11 @@ snotel_out <- subset(snotel, grepl("adj", metric)) %>%
 
 # -- 3. Ameriflux -----
 # okay as is since only 1 sensor being considered for ppt
+# Note (2025 review): US-NR1 precip is only an independent gauge 2003-2010. From 2011 on it
+# is effectively Boulder 14 W (USW00094075): 2011-2022 are AmeriFlux gap-filled values and
+# 2023+ report the same gauge (r = 1, identical annual totals; small daily differences are
+# likely day-boundary timing). Kept as a source anyway in case the tower returns to its own gauge,
+# but remember any NA applied to USW00094075 (e.g. 2025-12-03) is not applied here.
 ameriflux_out <- rename(ameriflux, measurement = qc_measurement, raw = raw_measurement) %>%
   # pair rep id with station id
   mutate(local_site = paste0(station_id, rep))

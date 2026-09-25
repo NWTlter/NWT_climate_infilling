@@ -167,5 +167,57 @@ Running non-interactively: 2T/2P call `View()`, which needs stubbing (e.g.
 - `view_plots` is `FALSE`; plotting was never exercised.
 - Latent bug spotted but NOT hit by this script: the qa function in
   `common_qaqc_functions.R` references undefined `maxval`/`minval` in its
-  `stopifnot()` (its params are `maxlim`/`minlim`). It would error if called —
-  likely reachable from the 2T/2P QC scripts.
+  `stopifnot()` (its params are `maxlim`/`minlim`). It would error if called, but
+  `flag_maxmin()` is never called anywhere, so it is not reachable.
+
+## 8. Plan for resuming (as of 2026-09-24, commit bed003c)
+
+The whole workflow runs end to end (1 -> 2T/2P -> 3P/3T -> 4T -> 5 sdl/c1/d1 ->
+infilled_viz_check). Remaining work is data decisions, then a final rerun and review.
+
+### Decisions to make (review plots first)
+1. **D1 HMPs 1-3, ~2018-07-25 to ~2019-03-26**: stop tracking temperature (HMP =
+   6.2 + 0.38 x chart; min up to +12 C vs Boulder 14 W); not flagged in EDI, so they
+   pass 2T QC. They feed the multi-year regressions for D1 chart / Saddle HMPs.
+   Plots: `data/plots/qc_review/3_d1_hmps_2018-2019.png`, `zoom_d1_hmps_start/end.png`,
+   and `d1_2018_temp_airtemp_max/min.png` (vs neighbors; `qc_review_d1_2018.R`). Those
+   confirm 2018-07-25 through 2019-03-26 (partly off that day; fine from 03-27) for all
+   three HMPs, which read nearly identical values throughout; D1 chart and old CR1000 fine.
+   If NA'ing: add a `sensor_fail`-style window for the D1 HMPs in 2T's HMP quick-QC
+   block (~line 590) that sets `qcflag` (see the SNOTEL fix for the pattern).
+2. **D1 chart daily max, ~May-Aug 2025, ~2 C cold** vs own-site sensors, Boulder 14 W
+   and Daymet (HMP 1 is steady over the same months). The chart is the infill target,
+   so its raw values are kept as measured. Decide: NA and infill, or keep and note.
+   Plots: `data/plots/qc_2025/temp_d1_airtemp_max.png`, `temp_monthly_departure_heatmap.png`.
+3. **Boulder 14 W (USW00094075) precip 0.0 mm on 2025-12-03** while Niwot 20.3, NPN 20.1,
+   C1 16: missed snow event. Decide: NA that day (US-NR1 carries the same 0.0, see below).
+   - US-NR1 precip is independent only 2003-2010 (own gauge, r 0.89-0.98, ~10-20% lower
+     totals). 2011-2022 it is AmeriFlux gap-fill and 2023+ it reports the same gauge as
+     USW00094075 (r = 1, identical annual totals). Decided 2026-09-25: keep US-NR1 as a
+     precip source in case it returns to an independent gauge (comment in 2P section 3).
+   - US-NR1 temperature is its own sensor (Tmax ~1.7 C cooler than Boulder 14 W, Tmin
+     ~2.4 C warmer); no issue.
+4. **Co-op afternoon observers** (USC00053496, USC00053116_1600, USC00053500): daily min
+   partly a day late; left unshifted (only USC00052761 is shifted). USC00059175
+   (Winter Park, 08:00) precip aligns best shifted -1 day; not shifted. Revisit only
+   if they start being chosen as sources.
+
+### Then
+5. Rerun from 2T (2T -> 3T -> 4T -> 5 x3 -> infilled_viz_check; ~15 min; add 2P/3P if
+   precip changes, ~20 min more). Script 1 only if raw data should be refreshed.
+   Scripts must run from the repo root; 2T/2P call `View()`, so stub it when using Rscript.
+6. Rerun `qc_2025_sources.R` and `qc_review_suspect_periods.R`; check the heatmap and
+   the new infill plots in `data/plots/qc/`.
+   Also `qc_2025_vs_neighbors.R` (~15 s): every 2025 series (charts included) minus its
+   best-matching neighbors, over gray bands of its usual 2010-2024 range; flagged days go to
+   `data/plots/qc_2025_vs_neighbors/flagged_days_*.csv`. Best run BEFORE step 5 as a check.
+7. Scientific review of the 2025 infilled values (not yet done), then hand
+   `data/publish/*_gapfilled_ongoing.csv` to the NWT_metadata reformat scripts
+   (projects 184-187 and SDL). Note outputs run into 2026 (partial year) and the
+   step-5 publish filters (SDL `year >= 2023`, C1/D1 `yr > 2021`) are unchanged.
+
+### Worth knowing
+- Unit, QC and date fixes in this branch also change pre-2025 values (e.g. ~128 Saddle
+  precip days since 1985) relative to what was published in earlier years.
+- Daymet 2025 runs cool vs 2018-2024 for every sensor, so use it as a weak reference.
+
