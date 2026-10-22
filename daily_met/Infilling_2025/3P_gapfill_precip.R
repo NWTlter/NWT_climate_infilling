@@ -72,8 +72,8 @@ c1_order <- with(allsites, paired_site[local_site == "c1" & paired_site != "c1"]
 # id missing dates needing infill
 c1missing <- idInfillDates(alldats, "c1", 1980)
 
-c1_seasonfill <- tk_ppt_seasonalfill(alldats, "c1", c1missing, c1_order)
-c1_historicfill <- tk_ppt_historicfill(alldats, "c1", c1missing, c1_order) # ask SCE about how to find perfect fits
+c1_seasonfill <- tk_ppt_seasonalfill(alldats, "c1", c1missing, c1_order, reject_neg_slope = T)
+c1_historicfill <- tk_ppt_historicfill(alldats, "c1", c1missing, c1_order, reject_neg_slope = T) # ask SCE about how to find perfect fits
 c1chosen <- choose_best(c1missing, c1_seasonfill, c1_historicfill)
 
 # -- backfill c1 based on best regression chosen ----
@@ -91,8 +91,8 @@ c1missing_0ac <- with(subset(c1ppt_out, grepl("^0 ppt", Flag.2)), date[!is.na(qd
 # join qdays and raw to re-run models, model selection, and backfilling for backfill periods where selected model had 0 ppt accum but c1 has positive
 alldats_qdays <- left_join(alldats, chartppt[c("date", "local_site", "qdays", "raw")])
 # re-run each model type with qdays check = T
-c1_historicfill_qdays <- tk_ppt_historicfill(alldats_qdays,target_site = "c1", missing_dates = c1missing_0ac, site_order = c1_order, qdayscheck = T)
-c1_seasonfill_qdays <- tk_ppt_seasonalfill(alldats_qdays,target_site = "c1", missing_dates = c1missing_0ac, site_order = c1_order, qdayscheck = T)
+c1_historicfill_qdays <- tk_ppt_historicfill(alldats_qdays,target_site = "c1", missing_dates = c1missing_0ac, site_order = c1_order, qdayscheck = T, reject_neg_slope = T)
+c1_seasonfill_qdays <- tk_ppt_seasonalfill(alldats_qdays,target_site = "c1", missing_dates = c1missing_0ac, site_order = c1_order, qdayscheck = T, reject_neg_slope = T)
 # choose the best model
 c1_chosen_qdays <- choose_best(c1missing_0ac, seasonfill = c1_seasonfill_qdays, historicfill = c1_historicfill_qdays)
 
@@ -134,12 +134,12 @@ sdl_order <- with(allsites, paired_site[local_site == "sdl" & paired_site != "sd
 sdl_order_c1up <- sdl_order[!sdl_order == "c1"] 
 sdl_order_c1up <- c(sdl_order_c1up[1:2], "c1", sdl_order_c1up[3:length(sdl_order_c1up)])
 
-sdl_seasonfill <- tk_ppt_seasonalfill(alldats, target_site = "sdl", missing_dates = sdlmissing, site_order = sdl_order_c1up)
-sdl_historicfill <- tk_ppt_historicfill(alldats, "sdl", sdlmissing, sdl_order_c1up)
+sdl_seasonfill <- tk_ppt_seasonalfill(alldats, target_site = "sdl", missing_dates = sdlmissing, site_order = sdl_order_c1up, reject_neg_slope = T)
+sdl_historicfill <- tk_ppt_historicfill(alldats, "sdl", sdlmissing, sdl_order_c1up, reject_neg_slope = T)
 
 # try sdl infill with overcatch correction factor applied to winter months to see if higher r2s for winter months
 alldats_overcatch <- mutate(alldats, measurement = ifelse(local_site == "sdl" & !mon %in% 6:9, measurement*0.39, measurement))
-sdl_historicfill_overcatch <- tk_ppt_historicfill(alldats_overcatch, "sdl", sdlmissing, sdl_order)
+sdl_historicfill_overcatch <- tk_ppt_historicfill(alldats_overcatch, "sdl", sdlmissing, sdl_order, reject_neg_slope = T)
 sdlchosen <- choose_best(sdlmissing, sdl_seasonfill, sdl_historicfill)
 
 # -- backfill sdl based on best regression chosen ----
@@ -159,8 +159,8 @@ sdlmissing_0ac <- with(subset(sdlppt_out, grepl("^0 ppt", Flag.2)), date[!is.na(
 alldats_qdays <- left_join(alldats, chartppt[c("date", "local_site", "qdays", "raw")])
 
 # re-run each model type with qdays check = T
-sdl_historicfill_qdays <- tk_ppt_historicfill(alldats_qdays,target_site = "sdl", missing_dates = sdlmissing_0ac, site_order = sdl_order_c1up, qdayscheck = T)
-sdl_seasonfill_qdays <- tk_ppt_seasonalfill(alldats_qdays,target_site = "sdl", missing_dates = sdlmissing_0ac, site_order = sdl_order_c1up, qdayscheck = T)
+sdl_historicfill_qdays <- tk_ppt_historicfill(alldats_qdays,target_site = "sdl", missing_dates = sdlmissing_0ac, site_order = sdl_order_c1up, qdayscheck = T, reject_neg_slope = T)
+sdl_seasonfill_qdays <- tk_ppt_seasonalfill(alldats_qdays,target_site = "sdl", missing_dates = sdlmissing_0ac, site_order = sdl_order_c1up, qdayscheck = T, reject_neg_slope = T)
 # choose the best model
 sdl_chosen_qdays <- choose_best(sdlmissing_0ac, seasonfill = sdl_seasonfill_qdays, historicfill = sdl_historicfill_qdays)
 
@@ -216,8 +216,8 @@ d1_order_c1up <- c(d1_order_c1up[1:2], "c1", d1_order_c1up[3:length(d1_order_c1u
 
 
 
-d1_seasonfill <- tk_ppt_seasonalfill(alldats, "d1", d1missing, d1_order_c1up)
-d1_historicfill <- tk_ppt_historicfill(alldats, "d1", d1missing, d1_order_c1up)
+d1_seasonfill <- tk_ppt_seasonalfill(alldats, "d1", d1missing, d1_order_c1up, reject_neg_slope = T)
+d1_historicfill <- tk_ppt_historicfill(alldats, "d1", d1missing, d1_order_c1up, reject_neg_slope = T)
 d1chosen <- choose_best(d1missing, d1_seasonfill, d1_historicfill)
 
 
@@ -246,8 +246,8 @@ d1missing_0ac <- with(subset(d1ppt_out, grepl("^0 ppt", Flag.2)), date[!is.na(qd
 alldats_qdays <- left_join(alldats, chartppt[c("date", "local_site", "qdays", "raw")])
 
 # re-run each model type with qdays check = T
-d1_historicfill_qdays <- tk_ppt_historicfill(alldats_qdays,target_site = "d1", missing_dates = d1missing_0ac, site_order = d1_order_c1up, qdayscheck = T)
-d1_seasonfill_qdays <- tk_ppt_seasonalfill(alldats_qdays,target_site = "d1", missing_dates = d1missing_0ac, site_order = d1_order_c1up, qdayscheck = T)
+d1_historicfill_qdays <- tk_ppt_historicfill(alldats_qdays,target_site = "d1", missing_dates = d1missing_0ac, site_order = d1_order_c1up, qdayscheck = T, reject_neg_slope = T)
+d1_seasonfill_qdays <- tk_ppt_seasonalfill(alldats_qdays,target_site = "d1", missing_dates = d1missing_0ac, site_order = d1_order_c1up, qdayscheck = T, reject_neg_slope = T)
 # choose the best model
 d1_chosen_qdays <- choose_best(d1missing_0ac, seasonfill = d1_seasonfill_qdays, historicfill = d1_historicfill_qdays)
 
@@ -476,15 +476,17 @@ c1_out$source_station[c1_out$flag_2 %in% c("G", "H")] <- "C1 Belfort Shielded"
 c1_out[grepl("^C1", c1_out$source_station), grep("pval|rsquar|regression", names(c1_out))] <- NA
 
 
-# stack c1 and d1 with tkdats, but start over at 2011-01-01
-c1_out_tkctw <- subset(c1tkppt, year <= 2010) %>%
+# stack c1 and d1 with tkdats, using the new infill from new_infill_start on
+# (was 2011; set to 1980 in 2025 to compare the full re-infill with the published TK/CTW series)
+new_infill_start <- 1980
+c1_out_tkctw <- subset(c1tkppt, year < new_infill_start) %>%
   #mutate(qdays_qcnote = NA, infill_qcnote = NA, compare_qcflag = NA) %>%
-  dplyr::bind_rows(subset(c1_out, year > 2010)) %>%
+  dplyr::bind_rows(subset(c1_out, year >= new_infill_start)) %>%
   arrange(date)
 
-d1_out_tkctw <- subset(d1tkppt, year <= 2010) %>%
+d1_out_tkctw <- subset(d1tkppt, year < new_infill_start) %>%
   #mutate(qdays_qcnote = NA, infill_qcnote = NA, compare_qcflag = NA) %>%
-  dplyr::bind_rows(subset(d1_out, year > 2010)) %>%
+  dplyr::bind_rows(subset(d1_out, year >= new_infill_start)) %>%
   arrange(date)
 
 

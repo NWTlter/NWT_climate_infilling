@@ -120,9 +120,8 @@ tktemp_tidy <- subset(tktemp, select = c(LTER_site:flag_3)) %>%
 
 charttemp_out <- charttemp %>%
   mutate(raw = measurement,
-         # if it's been previously infilled, NA (leave questionable flagged vals
-         # and will NA if fail other checks)
-         measurement = ifelse(is.na(flag) | flag == 'n' | flag == "q", measurement, NA)) %>%
+         # if it's been previously infilled or flagged questionable (q), NA so it gets infilled
+         measurement = ifelse(is.na(flag) | flag == 'n', measurement, NA)) %>%
   # join to charttemp_out and NA anything that was infilled or adjusted
   left_join(tktemp_tidy[c("date", "local_site", "metric", 
                           "tk_measurement", "tk_predicted")]) %>%
@@ -147,6 +146,9 @@ charttemp_out <- distinct(charttemp_out) #doesn't look like it changes anything.
 
 # -- 2. NWT logger dats -----
 nwtlog_out <- nwtlog %>%
+  # the 21x packages have no flag values at all; treat them as unflagged here (otherwise every
+  # 21x value is NA'd below) -- CTW's QC flags for the 21x are applied later via logger_prep
+  mutate(flag = ifelse(is.na(flag) & grepl("21x", logger, ignore.case = TRUE), "n", flag)) %>%
   mutate(local_site = casefold(local_site), #lowcase all sites
          station_id = ifelse(!is.na(rep), paste(local_site, logger, rep, sep= "_"), 
                              paste(local_site, logger, sep = "_")),
@@ -541,8 +543,9 @@ qc_sdl <- read_csv(qcsdl[2]) %>% data.frame()
 # use ctw qc'd sdl from renewal, and be sure to NA anything where !is.na(flag) [previously infilled]
 # use 2011 onwards c1 and d1 from ctw, otherwise what's in charttemp
 charttemp_c1d1 <- subset(charttemp, grepl("c1|d1", local_site) & yr < 2011 | yr > 2018) %>%
-  # assign raw to measurement if tk predicted is NA (applies to 2019 onwards)
-  mutate(measurement = ifelse(is.na(tk_predicted), raw, measurement))
+  # assign raw to measurement if tk predicted is NA (applies to 2019 onwards),
+  # except q-flagged (or otherwise flagged) values, which stay NA so they get infilled
+  mutate(measurement = ifelse(is.na(tk_predicted) & (is.na(flag) | flag == 'n'), raw, measurement))
 
 
 # prep qc'd 2011-2018 data
@@ -551,6 +554,13 @@ c1d1_qcd_1118 <- rbind(subset(qc_c1, yr > 2010, select = c(LTER_site:met, qa_tem
   rename(metric = met, measurement = qa_temp) %>%
   # append chart to local_site
   mutate(local_site = paste0(local_site, "_chart"))
+# CTW's 2011-2018 infill replaced the available raw value with a fully predicted tmax/tmin pair when the
+# raw + DTR-calculated pair fit the logger worse than the prediction, or the raw value had been shifted
+# for an artificial drop (methods II(D) in knb-lter-nwt.185/187). NA those days so both get predicted here too
+tktemp <- stackData(getNWTchartsinfilled(mets = c("temp")))
+ctw_predicted <- subset(tktemp, grepl("Predicted infill chosen", infill_QA_note), select = c(date, local_site)) %>%
+  mutate(key = paste(as.Date(date), paste0(casefold(local_site), "_chart")))
+c1d1_qcd_1118$measurement[paste(as.Date(c1d1_qcd_1118$date), c1d1_qcd_1118$local_site) %in% ctw_predicted$key] <- NA
 
 #qc_sdl has some weird things in june 2000 20s with date overlaps + qa flags (flatline), 
 # didn't join correctly

@@ -76,13 +76,13 @@ allsites <- arrange(allsites, local_site, final_rank, paired_site)
 
 # -- C1 Chart 2019 - 2022
 
-c1_chart_missing <- idInfillDates(alldats, "c1_chart", 2020) 
+c1_chart_missing <- idInfillDates(alldats, "c1_chart", 1980) # 1980: first year with neighbor sources (2T drops GHCN before 1980)
 c1_chart_order <- with(allsites, paired_site[grepl("c1_chart", local_site) & final_rank!= 1])
 # moving window infill
 c1_chart_season <- tk_temp_movingfill(alldats, target_site = "c1_chart", 
-                                      missing_dates = c1_chart_missing, site_order =  c1_chart_order)
+                                      missing_dates = c1_chart_missing, site_order =  c1_chart_order, reject_neg_slope = T)
 # historic infill
-c1_chart_historic <- tk_temp_historicfill(alldats, "c1_chart", c1_chart_missing, c1_chart_order)
+c1_chart_historic <- tk_temp_historicfill(alldats, "c1_chart", c1_chart_missing, c1_chart_order, reject_neg_slope = T)
 # model selection for sdl21x
 select_c1_chart <- select_model(c1_chart_historic, c1_chart_season)
 
@@ -122,13 +122,13 @@ ggplot(c1_chart_predicted |> dplyr::filter(yr > 2020))+
 
 # -- d1 Chart 2019 - 2022
 
-d1_chart_missing <- idInfillDates(alldats, "d1_chart", 2020) 
+d1_chart_missing <- idInfillDates(alldats, "d1_chart", 1980) # 1980: first year with neighbor sources (2T drops GHCN before 1980)
 d1_chart_order <- with(allsites, paired_site[grepl("d1_chart", local_site) & final_rank!= 1])
 # moving window infill
 d1_chart_season <- tk_temp_movingfill(alldats, target_site = "d1_chart", 
-                                      missing_dates = d1_chart_missing, site_order =  d1_chart_order)
+                                      missing_dates = d1_chart_missing, site_order =  d1_chart_order, reject_neg_slope = T)
 # historic infill
-d1_chart_historic <- tk_temp_historicfill(alldats, "d1_chart", d1_chart_missing, d1_chart_order)
+d1_chart_historic <- tk_temp_historicfill(alldats, "d1_chart", d1_chart_missing, d1_chart_order, reject_neg_slope = T)
 # model selection for sdl21x
 select_d1_chart <- select_model(d1_chart_historic, d1_chart_season)
 
@@ -169,9 +169,9 @@ ggplot(d1_chart_predicted |> dplyr::filter(yr > 2020))+
 sdl1000_hmp_1_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_1", 2020)
 sdl1000_hmp_1_order <- with(allsites, paired_site[grepl("sdl_cr1000_hmp_1", local_site) & final_rank!= 1])
 # moving window infill
-sdl1000_hmp_1_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_1", missing_dates = sdl1000_hmp_1_missing, site_order =  sdl1000_hmp_1_order)
+sdl1000_hmp_1_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_1", missing_dates = sdl1000_hmp_1_missing, site_order =  sdl1000_hmp_1_order, reject_neg_slope = T)
 # historic infill
-sdl1000_hmp_1_historic <- tk_temp_historicfill(alldats, "sdl_cr1000_hmp_1", sdl1000_hmp_1_missing, sdl1000_hmp_1_order)
+sdl1000_hmp_1_historic <- tk_temp_historicfill(alldats, "sdl_cr1000_hmp_1", sdl1000_hmp_1_missing, sdl1000_hmp_1_order, reject_neg_slope = T)
 # selection for hmp1
 select_sdl1000_hmp_1 <- select_model(sdl1000_hmp_1_historic, sdl1000_hmp_1_season)
 # calculate derived tmin and tmax
@@ -197,9 +197,9 @@ ggplot(sdl1000_hmp_1_predicted) +
 sdl1000_hmp_2_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_2", 2020)
 sdl1000_hmp_2_order <- with(allsites, paired_site[grepl("sdl_cr1000_hmp_2", local_site) & final_rank!= 1])
 # moving window infill
-sdl1000_hmp_2_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_2", missing_dates = sdl1000_hmp_2_missing, site_order =  sdl1000_hmp_2_order)
+sdl1000_hmp_2_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_2", missing_dates = sdl1000_hmp_2_missing, site_order =  sdl1000_hmp_2_order, reject_neg_slope = T)
 # historic infill
-sdl1000_hmp_2_historic <- tk_temp_historicfill(alldats, "sdl_cr1000_hmp_2", sdl1000_hmp_2_missing, sdl1000_hmp_2_order)
+sdl1000_hmp_2_historic <- tk_temp_historicfill(alldats, "sdl_cr1000_hmp_2", sdl1000_hmp_2_missing, sdl1000_hmp_2_order, reject_neg_slope = T)
 # selection for hmp2
 select_sdl1000_hmp_2 <- select_model(sdl1000_hmp_2_historic, sdl1000_hmp_2_season)
 # calculate regression derived tmax and min
@@ -224,9 +224,9 @@ ggplot(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2025)) +
 sdl1000_hmp_3_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_3", 2020)
 sdl1000_hmp_3_order <- with(allsites, paired_site[grepl("sdl_cr1000_hmp_3", local_site) & final_rank!= 1])
 # moving window infill
-sdl1000_hmp_3_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_3", missing_dates = sdl1000_hmp_3_missing, site_order =  sdl1000_hmp_3_order)
+sdl1000_hmp_3_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_3", missing_dates = sdl1000_hmp_3_missing, site_order =  sdl1000_hmp_3_order, reject_neg_slope = T)
 # historic infill
-sdl1000_hmp_3_historic <- tk_temp_historicfill(alldats, "sdl_cr1000_hmp_3", sdl1000_hmp_3_missing, sdl1000_hmp_3_order)
+sdl1000_hmp_3_historic <- tk_temp_historicfill(alldats, "sdl_cr1000_hmp_3", sdl1000_hmp_3_missing, sdl1000_hmp_3_order, reject_neg_slope = T)
 # selection for hmp3
 select_sdl1000_hmp_3 <- select_model(sdl1000_hmp_3_historic, sdl1000_hmp_3_season)
 # calculate regression derived tmin and tmax
