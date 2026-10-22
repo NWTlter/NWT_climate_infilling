@@ -126,10 +126,14 @@ Changes needed to get there (beyond sections 1, 2 and 4):
   (the NCEI "access" CSVs used by `fetchGHCND()` since 2024; CTW's original CDO
   downloads were metric). 2P and 2T now divide by 10 on read. NPN (ETI gauge) was
   converted inches -> cm in script 1; now inches -> mm. Converting precip changed
-  results: 2P's cross-station check pools all stations into one z-score, so ~128
-  lone large Saddle days (1985-2026) are now flagged and infilled (e.g. 127 mm on
-  2019-01-22 -> 10.8 mm); 18 D1 days and 1 C1 day also changed.
-- 2T SNOTEL QC: CTW's manual sensor-failure windows (Niwot tmax 2005-06-01..2007-02-01,
+  results: 2P's cross-station check pools all stations into one z-score, so the
+  scaled-limit rules flag more days. Checked 2026-10-22 by rerunning 2P with the old
+  units: 15 more SDL days (33-127 mm, 1990-2019, e.g. 127 mm on 2019-01-22 -> 10.8 mm),
+  6 D1 and 1 C1 are flagged. 94 of the 109 SDL days flagged now were flagged in
+  earlier years too (CTW's SDL-specific rules don't depend on units).
+  These are CTW's existing rules (same text in v1 and 2022-2024 2P); reviewed against
+  neighbors in plots/qc_review/ppt_new_flags_sdl_c1.png and kept.
+- 2T SNOTEL QC: CTW's manual sensor-failure windows (Niwot tmax 2005-06-01..2007-02-01, now extended to 2007-03-10,
   University Camp tmax 2010-05-01..2011-09-01) only NA'd a working copy; only `qcflag`
   is joined back, so ~970 bad values survived. `sensor_fail` now sets `qcflag`.
 - 2T AmeriFlux QC: flags were applied to `amerigl4` instead of `ameriflux` (typo); fixed.

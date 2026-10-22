@@ -747,8 +747,9 @@ snotel_dailysds <- subset(snotel) %>%
   # add absolute lim flags
   mutate(limit_flag = measurement < -50 | measurement > 40)
 # manually remove tmax for niwot and snotel (manual review via iteration)
+# niwot window extended to 2007-03-10: qc_review_suspect_periods.R shows tmax still running warm through then
 snotel_dailysds$sensor_fail <- FALSE
-snotel_dailysds$sensor_fail[grepl("Niw", snotel_dailysds$local_site) & snotel_dailysds$date %in% seq.Date(as.Date("2005-06-01"), as.Date("2007-02-01"), 1) & snotel_dailysds$metric == "airtemp_max"] <- TRUE 
+snotel_dailysds$sensor_fail[grepl("Niw", snotel_dailysds$local_site) & snotel_dailysds$date %in% seq.Date(as.Date("2005-06-01"), as.Date("2007-03-10"), 1) & snotel_dailysds$metric == "airtemp_max"] <- TRUE 
 snotel_dailysds$sensor_fail[grepl("Univer", snotel_dailysds$local_site) & snotel_dailysds$date %in% seq.Date(as.Date("2010-05-01"), as.Date("2011-09-01"), 1) & snotel_dailysds$metric == "airtemp_max"] <- TRUE 
 # resume quick qc
 snotel_dailysds <- mutate(snotel_dailysds, measurement = ifelse(limit_flag | sensor_fail, NA, measurement)) %>%

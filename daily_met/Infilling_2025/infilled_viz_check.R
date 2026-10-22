@@ -141,7 +141,7 @@ for (col in c("precip")){
     scale_color_brewer(palette = 'Set2')+
     labs(y= col, x = 'Date')
   
-  ggsave(paste0(plot_out, col, "_c1_ppt_infilled_2025.png"), plot = p, device = 'png', height = 6, width=8)
+  ggsave(paste0(plot_out, col, "_c1_ppt_infilled_2019-2025.png"), plot = p, device = 'png', height = 6, width=8)
   
   for (y in c(2025)){
     p <- ggplot()+
@@ -198,7 +198,7 @@ if(!dir.exists(paste0(out_dir,"qc/d1/temp"))){
   dir.create(paste0(out_dir,"qc/d1/temp"), recursive = TRUE)
 }
 
-plot_out <- paste0(out_dir,"qc/d1/temp")
+plot_out <- paste0(out_dir,"qc/d1/temp/")
 
 for (col in c("airtemp_max", "airtemp_min", "airtemp_avg")){
   
@@ -231,7 +231,7 @@ if(!dir.exists(paste0(out_dir,"qc/d1/ppt"))){
   dir.create(paste0(out_dir,"qc/d1/ppt"), recursive = TRUE)
 }
 
-plot_out <- paste0(out_dir,"qc/d1/ppt")
+plot_out <- paste0(out_dir,"qc/d1/ppt/")
 
 for (col in c("precip")){
   
@@ -251,7 +251,7 @@ for (col in c("precip")){
     scale_color_brewer(palette = 'Set2')+
     labs(y= col, x = 'Date')
   
-  ggsave(paste0(plot_out, col, "_d1_ppt_infilled_2025.png"), plot = p, device = 'png', height = 6, width=8)
+  ggsave(paste0(plot_out, col, "_d1_ppt_infilled_2024-2025.png"), plot = p, device = 'png', height = 6, width=8)
   
   for (y in c(2025)){
     p <- ggplot()+
