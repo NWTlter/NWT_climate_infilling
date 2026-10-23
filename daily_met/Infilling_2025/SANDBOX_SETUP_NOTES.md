@@ -137,6 +137,10 @@ Changes needed to get there (beyond sections 1, 2 and 4):
   University Camp tmax 2010-05-01..2011-09-01) only NA'd a working copy; only `qcflag`
   is joined back, so ~970 bad values survived. `sensor_fail` now sets `qcflag`.
 - 2T AmeriFlux QC: flags were applied to `amerigl4` instead of `ameriflux` (typo); fixed.
+- 2P US-NR1 precip: from 2011 it is Boulder 14 W (USW00094075) re-reported (r = 0.999-1.000,
+  same annual totals), so it duplicated that source and bypassed its NAs. Only 1998-2010 (the
+  tower's own gauge) is now written out for infilling; it still feeds the cross-station check.
+  Rerun 2026-10-22: net change -6 mm C1, -22 mm D1, -4 mm SDL over the whole record; QC flags unchanged.
 - Review plots (not part of the pipeline, run after 2T/2P):
   `qc_review_suspect_periods.R` -> `data/plots/qc_review/` (Niwot/Univ Camp SNOTEL,
   D1 HMPs Jul 2018-Mar 2019, still undecided); `qc_2025_sources.R` ->

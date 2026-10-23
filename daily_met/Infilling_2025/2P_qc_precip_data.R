@@ -328,8 +328,8 @@ snotel_out <- subset(snotel, grepl("adj", metric)) %>%
 # Note (2025 review): US-NR1 precip is only an independent gauge 2003-2010. From 2011 on it
 # is effectively Boulder 14 W (USW00094075): 2011-2022 are AmeriFlux gap-filled values and
 # 2023+ report the same gauge (r = 1, identical annual totals; small daily differences are
-# likely day-boundary timing). Kept as a source anyway in case the tower returns to its own gauge,
-# but remember any NA applied to USW00094075 (e.g. 2025-12-03) is not applied here.
+# likely day-boundary timing). Still used in the cross-station check below (CTW's rules need ameri_pos),
+# but only 1998-2010 is written out for infilling so it can't stand in for Boulder 14 W (and bypass its NAs)
 ameriflux_out <- rename(ameriflux, measurement = qc_measurement, raw = raw_measurement) %>%
   # pair rep id with station id
   mutate(local_site = paste0(station_id, rep))
@@ -646,6 +646,6 @@ saveRDS(chartppt_out_qc2, paste0(datpath, "/qc/nwtchartPPT_qc.rds")) #15 MB
 saveRDS(c1logppt_out, paste0(datpath, "/qc/c1loggerPPT_qc.rds")) 
 saveRDS(ghcnd_out2, paste0(datpath, "/qc/ghcndPPT_qc.rds")) #15 MB
 saveRDS(snotel_out2, paste0(datpath, "/qc/snotelPPT_qc.rds")) #15 MB
-saveRDS(ameriflux_out, paste0(datpath, "/qc/amerifluxPPT_qc.rds")) #15 MB
+saveRDS(subset(ameriflux_out, yr <= 2010), paste0(datpath, "/qc/amerifluxPPT_qc.rds")) # own gauge only, see note in section 3
 saveRDS(allsites, paste0(datpath, "/qc/siteinfoPPT_qc.rds")) #15 MB
 
