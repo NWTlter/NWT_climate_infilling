@@ -25,9 +25,10 @@ rdsfiles <- list.files(paste0(datpath), pattern = "rds", full.names = T, recursi
 
 d1_temp <- readRDS(rdsfiles[grepl("d1_chart_infilled_v1.rds", rdsfiles)]) |> 
   dplyr::mutate(LTER_site = "NWT") |> dplyr::select(-local_site.1) |> 
-  dplyr::filter(yr > 2021)
+  # 2025: publish the whole re-infill (1980 on); 6_build_full_record.R adds the posted pre-1980 rows
+  dplyr::filter(yr >= 1980)
 d1_ppt <- readRDS(rdsfiles[grepl("d1PPT_infilled_draft.rds", rdsfiles)]) |> 
-  dplyr::filter(year > 2021)
+  dplyr::filter(year >= 1980) # before 1980 the draft holds the old TK/CTW series
 
 # pull in all sites for saddle (temp and precip)
 sitesppt <- readRDS(paste0(datpath, "qc/siteinfoPPT_qc.rds"))

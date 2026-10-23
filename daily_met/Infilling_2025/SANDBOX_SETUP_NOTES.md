@@ -95,6 +95,7 @@ All scripts run end to end from the repo root (exit 0):
 | `3T_gapfill.R` | ~8 min | `data/infill/*_chart_infilled_v1.*`, `sdlhmp_infilled_2025.rds` |
 | `4T_homogenize_sdlts.R` | ~3 s | `data/homogenize/` |
 | `5_prep_v1_forEDI.R`, `c1/`, `d1/` | ~25 s each | `data/publish/*_gapfilled_ongoing.csv` |
+| `6_build_full_record.R` | ~1 min | `data/publish/full_record/*.csv` (EDI-ready full tables) |
 | `infilled_viz_check.R` | ~25 s | `data/plots/qc/` |
 
 Changes needed to get there (beyond sections 1, 2 and 4):
@@ -121,7 +122,7 @@ Changes needed to get there (beyond sections 1, 2 and 4):
   (USC00053496, USC00053116_1600, USC00053500) look like afternoon observers: max
   aligned, min partly a day late; left unshifted on purpose. `time_observed` is empty
   for temperature, so observation times could not be confirmed. The station ends
-  Jan 2021, so published (2022+) outputs are unaffected.
+  Jan 2021, so it affects 1980-2020 values only.
 - Units: GHCN-Daily stores PRCP in tenths of mm and TMAX/TMIN/TOBS in tenths of C
   (the NCEI "access" CSVs used by `fetchGHCND()` since 2024; CTW's original CDO
   downloads were metric). 2P and 2T now divide by 10 on read. NPN (ETI gauge) was
@@ -166,9 +167,8 @@ Not changed on purpose:
 - C1 temp output keeps the odd names `..._regression_regression_equation` and
   `infill_QAnote`, and both C1/D1 temp keep `raw_Tmean`: the NWT_metadata
   reformat scripts (`project.185`, `project.187`) expect and fix exactly these.
-- Publish-window filters in step 5 (`year >= 2023` for SDL, `yr > 2021` for C1/D1)
-  are unchanged; outputs run into 2026 (partial year), so clip as needed in the
-  NWT_metadata reformat step.
+- (Superseded 2026-10-23, see section 10: the publish windows now start at each
+  re-infill start.)
 
 Not yet reviewed: whether the infilled values are scientifically correct.
 
@@ -257,13 +257,12 @@ infilled_viz_check). Remaining work is data decisions, then a final rerun and re
    D1 2025-12-13..16 15.2 mm accumulation while neighbors dry; SDL 2025-02-20 infilled
    from a negative-slope r2 0.17 fit; SDL/D1 2025 precip 2nd lowest since 1990 (raw, not
    infill; region dry too). Then hand
-   `data/publish/*_gapfilled_ongoing.csv` to the NWT_metadata reformat scripts
-   (projects 184-187 and SDL). Note outputs run into 2026 (partial year) and the
-   step-5 publish filters (SDL `year >= 2023`, C1/D1 `yr > 2021`) are unchanged.
+   the `data/publish/full_record/` files to EDI as replacement tables (section 10).
+   The `_ongoing` files run into 2026 (partial year).
 
 ### Worth knowing
-- Unit, QC and date fixes in this branch also change pre-2025 values (e.g. ~128 Saddle
-  precip days since 1985) relative to what was published in earlier years.
+- Unit, QC and date fixes in this branch also change pre-2025 values (e.g. 15 Saddle
+  precip days newly flagged, 1990-2019) relative to what was published in earlier years.
 - Daymet 2025 runs cool vs 2018-2024 for every sensor, so use it as a weak reference.
 
 
@@ -279,7 +278,7 @@ infilled_viz_check). Remaining work is data decisions, then a final rerun and re
 - 2T keeps 21x values (their packages have no flags); CTW's QC flags are applied via
   `logger_prep` as for other loggers. 21x is a usable source for 1986-2000.
 - 3T now infills C1/D1 from 1980 (was 2020); SDL HMPs still from 2020 (record starts 2018).
-  Published C1/D1 temp still starts 2022, so this only feeds the comparison.
+  Now republished from 1980 (section 10).
 - `qc_compare_old_infill.R` compares with the published EDI infill (knb-lter-nwt.184-187),
   1980-2024 -> `data/plots/qc_compare_old_infill/`. Raw days identical in both. Days infilled
   in both: same source sd of diff ~0.8 C, different source ~2.1 C, no bias. Precip before
@@ -297,3 +296,49 @@ temperature-adjusted infill"; methods II(D) in knb-lter-nwt.185/187) were being 
 2T now NAs the 2011-2018 CTW chart values on those days so 3T predicts both sides, matching CTW's choice. Only those
 59 days changed; |new - old| median 0.8 C (was 1.0 C with the raw values). CTW's artificial-drop shifts (+1/+3/+4 C)
 were already applied via `qa_temp`, so no extra adjustment was needed.
+
+## 10. Full-record republish (2026-10-23)
+
+Each dataset is republished from its re-infill start so the 2025 fixes reach back through
+the record, not just the newest years. The earlier rows are kept exactly as posted.
+
+| EDI | Kept as posted | New |
+|---|---|---|
+| 184/185/186/187 C1/D1 precip and temp | 1952-1979 | 1980-2025 |
+| 314 SDL temp | 1986-12-06 - 2019 (CTW homogenized multi-logger series) | 2020-2025 |
+| 315 SDL precip | none (posted 1981 - May 1987 dropped) | 1987-06-01 - 2025 |
+
+- **1980 is the limit with the current sources.** 2T drops GHCN before 1980 and SNOTEL
+  starts 1979-80. Going earlier needs the older co-op stations listed in section 9 and
+  the 2T cut removed.
+- **SDL temp:**
+  - This pipeline only rebuilds the HMP era, and 3T infills the HMPs from 2020.
+  - The new series equals 314 in 2018-2019, except 15 days in 2019 that the new run leaves unfilled.
+  - CTW's adjustment and gap-fill columns are blank from 2020, as in the 2022-2024 rows already on EDI.
+- **Step 5 publish filters:** C1/D1 now `>= 1980` (was `> 2021`). SDL temp `>= 2020`
+  (was `>= 2023`). SDL precip unfiltered (was `>= 2023`).
+- **`6_build_full_record.R`** (run after step 5):
+  - Downloads each posted table.
+  - Keeps the rows before the new start.
+  - Appends the step-5 rows through `last_date` (2025-12-31).
+  - Applies the same column fixes the NWT_metadata reformat scripts make.
+  - Checks for duplicate and missing dates.
+  - C1/D1 temp: carries CTW's QA flags and notes from posted rows (1980 on) where the
+    new value equals the posted value or posted raw.
+  - Writes `data/publish/full_record/<EDI table name>`. Posted tables are read as text and
+    written in EDI's quoting, so posted rows are byte-identical to EDI.
+- **The NWT_metadata reformat scripts only append rows after the last posted date, so
+  they don't apply to a full replacement.** Use the `full_record/` files directly. Not
+  changed in NWT_metadata.
+- **Package text to update:** the methods should say the data were re-infilled with the
+  2025 methods from 1980 (C1/D1), from 2020 (SDL temp) and from 1987-06-01 (SDL precip,
+  which is also the new start of that record).
+- **Precip note fix (review finding):** 2P read the 2011+ raw flags `n` (no flag) and `m` (missing)
+  as old infill. In the SDL publish file, every raw day from 2011 on was labelled "'Raw' value
+  infilled by outdated method…". `raw_flagged` now excludes `n`/`m`. Side effect: D1
+  2011-12-29 (13 mm, inside the 2012-01-16 19-day accumulation) stays removed by the qdays
+  check and is infilled. This is the 3P `#!BUG` case.
+- **Review finding #4 checked:** the posted Saddle HMP and "Nonsensical qday" notes missing from the
+  new 2020–22 rows are days that are now missing (`m`/NA) in the raw EDI data. They are infilled
+  either way. Three HMP days CTW removed for "rate change" are now kept: 2020-12-23 HMP3 min,
+  2021-02-05 HMP3 max, 2021-02-09 HMP1 max. Each is within 0.3 °C of the other HMPs.

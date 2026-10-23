@@ -202,7 +202,7 @@ summary(sdlppt_out_complete)
 
 
 # -- INFILL D1 -----
-#!BUG
+#!BUG (fixed 2025 in 2P: the raw "n" flag no longer puts this qdays-removed value back)
 # alldats <- alldats |> 
 #   dplyr::mutate(
 #     measurement = ifelse(
@@ -325,9 +325,11 @@ names_out <- names(d1tkppt)
 names_current <- names(d1ppt_out_complete)
 d1_out_complete_prep <- d1ppt_out_complete %>%
   mutate(precip = ifelse(!is.na(backfill), backfill, measurement),
-         Flag.1 = ifelse(is.na(equation) & raw == measurement, "A", Flag.1),
-         Flag.2 = ifelse(is.na(equation) & raw == measurement, "A", Flag.2),
-         source.station = ifelse((is.na(equation) & is.na(source.station)) | method == "H", "D1 Belfort Shielded", source.station)) %>%
+         # assign "A" flags to nonfilled dates (test method, not equation: H days have no equation and raw is NA, which NA'd their flags)
+         Flag.1 = ifelse(is.na(method) & raw == measurement, "A", Flag.1),
+         Flag.2 = ifelse(is.na(method) & raw == measurement, "A", Flag.2),
+         # if was not infilled or method was just to divide accumulated precip by number of days, assign D1 Belfort
+         source.station = ifelse((is.na(method) & is.na(source.station)) | method == "H", "D1 Belfort Shielded", source.station)) %>%
   rename_all(casefold) %>%
   rename_all(function(x) gsub(".", "_", x, fixed = T))
 
@@ -357,9 +359,11 @@ c1tkppt <- getTabular(184)
 names_current <- names(c1ppt_out_complete)
 c1_out_complete_prep <- c1ppt_out_complete %>%
   mutate(precip = ifelse(!is.na(backfill), backfill, measurement),
-         Flag.1 = ifelse(is.na(equation) & raw == measurement, "A", Flag.1),
-         Flag.2 = ifelse(is.na(equation) & raw == measurement, "A", Flag.2),
-         source.station = ifelse(is.na(equation) & is.na(source.station), "C1 Belfort Shielded", source.station)) %>%
+         # assign "A" flags to nonfilled dates (as for d1 and sdl)
+         Flag.1 = ifelse(is.na(method) & raw == measurement, "A", Flag.1),
+         Flag.2 = ifelse(is.na(method) & raw == measurement, "A", Flag.2),
+         # if was not infilled or method was just to divide accumulated precip by number of days, assign C1 Belfort
+         source.station = ifelse((is.na(method) & is.na(source.station)) | method == "H", "C1 Belfort Shielded", source.station)) %>%
   rename_all(casefold) %>%
   rename_all(function(x) gsub(".", "_", x, fixed = T))
 

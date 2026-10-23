@@ -141,11 +141,14 @@ tkflagged <- tkflagged %>%
 
 chartppt_out_qc <- left_join(chartppt_out, tkflagged[c("date", "local_site", "precip", "source_station", "tk_qcnote")]) %>%
   data.frame() %>%
+  # from 2011 on the raw flag is "n" (no flag), "m" (missing) or "q"; only the pre-2011 codes 1/2 mark old infill
+  # (treating "n" as a flag noted every unflagged sdl day as infilled by outdated method)
+  mutate(raw_flagged = !is.na(flag_ppt_tot) & !flag_ppt_tot %in% c("n", "m")) %>%
   mutate(mismatch = measurement != precip,
     infill_qcnote = ifelse(flag_ppt_tot == "q" & !is.na(flag_ppt_tot), "JM flagged as questionable",
-                                ifelse(!is.na(flag_ppt_tot) & local_site == "sdl", "infilled by outdated method", 
-                                       ifelse(!is.na(flag_ppt_tot) & !is.na(tk_qcnote), paste("infilled by outdated method,", tk_qcnote), 
-                                              ifelse(!is.na(flag_ppt_tot), "flagged in raw, tk did not flag", tk_qcnote))))) %>%
+                                ifelse(raw_flagged & local_site == "sdl", "infilled by outdated method",
+                                       ifelse(raw_flagged & !is.na(tk_qcnote), paste("infilled by outdated method,", tk_qcnote),
+                                              ifelse(raw_flagged, "flagged in raw, tk did not flag", tk_qcnote))))) %>%
   # if tk did not flag and is c1 or d1, return measurement value (these are all 0 ppt values in 1960s after instrument change)
   mutate(measurement = ifelse(grepl("tk did not flag", infill_qcnote), raw, measurement)) %>%
   # NA anything that is noted as infilled by TK method/has an infill note and qdays == 1 EXCEPT if (measurement == 0 & raw == 0)
@@ -153,7 +156,7 @@ chartppt_out_qc <- left_join(chartppt_out, tkflagged[c("date", "local_site", "pr
   mutate(measurement = ifelse(!is.na(infill_qcnote) &  !grepl("tk did not flag", infill_qcnote) & yr < 2011, NA, measurement)) %>%
   # start data at 1964-10-01 (since that is when d1 starts; takes care of unshielded data at c1)
   # and select only columns of interest for writing out
-  subset(date >= min(chartppt$date[chartppt$local_site == "d1"]), select = -c(LTER_site, flag_ppt_tot, precip:mismatch)) %>%
+  subset(date >= min(chartppt$date[chartppt$local_site == "d1"]), select = -c(LTER_site, flag_ppt_tot, raw_flagged, precip:mismatch)) %>%
   rename(station_name = local_site)
 
 # -- REVIEW CANDIDATE REF DATS -----

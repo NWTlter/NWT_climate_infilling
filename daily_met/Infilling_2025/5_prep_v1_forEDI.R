@@ -377,7 +377,8 @@ sapply(sdl_temp_pretty[grepl("source", names(sdl_temp_pretty))], unique)
 # write out csv with utf-8 and \r\n eol (end of line)
 # (need to change this in code settings, check it looks good after write out)
 
-sdl_temp_pretty <- sdl_temp_pretty |> dplyr::filter(year >= 2023)
+# 2025: publish from 2020, where the SDL HMP infill starts (3T); 6_build_full_record.R adds the posted rows before
+sdl_temp_pretty <- sdl_temp_pretty |> dplyr::filter(year >= 2020)
 write.csv(sdl_temp_pretty, paste0(datpath, "publish/sdl_daily_airtemp_gapfilled_ongoing.csv"), row.names = F, na = "NaN", quote = T)
 
 # -- 2. PRETTY SDL PPT -----
@@ -574,7 +575,7 @@ ggplot(aes(month(date), precip, group = month(date))) +
 # -- write out pretty ppt -----
 
 #Clip to only include 2023+
-sdl_ppt_pretty <- sdl_ppt_pretty |> dplyr::filter(year >= 2023)
+# 2025: publish the whole record (3P starts SDL at 1987-06-01)
 
 # make NA NaN instead (tell sce NaN in this case = no value, not data are missing)
 # write out csv with utf-8 and \r\n eol (end of line)
