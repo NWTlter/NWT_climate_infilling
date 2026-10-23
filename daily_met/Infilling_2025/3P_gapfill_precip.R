@@ -58,6 +58,13 @@ alldats <- subset(chartppt, select = c(date, yr, mon, doy, local_site, metric, m
   rbind(ameriflux[names(.)]) %>%
   arrange(local_site, date) %>%
   mutate(metric = "ppt_tot") # snotel stil has snow_adj
+
+# SDL winter (Oct-May) precip before Jun 1987 is not comparable with the rest of the record (SDL:D1
+# winter ratio ~1 in WY1982-1987 vs ~2 from WY1988 on; EDI knb-lter-nwt.315 removes those winters for
+# "unresolved data quality issues"). Start the SDL record 1987-06-01: drop earlier SDL rows so SDL is
+# neither infilled nor used as a source for C1/D1 before then
+sdl_start <- as.Date("1987-06-01")
+alldats <- subset(alldats, !(local_site == "sdl" & date < sdl_start))
   
 # make sure allsites ordered by pair rank
 allsites <- arrange(allsites, local_site, combo_rank)
@@ -144,7 +151,7 @@ sdlchosen <- choose_best(sdlmissing, sdl_seasonfill, sdl_historicfill)
 
 # -- backfill sdl based on best regression chosen ----
 
-sdlppt_out <- subset(chartppt, local_site == "sdl") %>%
+sdlppt_out <- subset(chartppt, local_site == "sdl" & date >= sdl_start) %>%
   # now make sure qdays > 1 have the raw measurement unless there is a qc note on it
   mutate(ppt_tot = ifelse(qdays > 1, raw, measurement))
 
@@ -177,7 +184,7 @@ summary(sdl_complete_predicted) # no NAs
 summary(sdlmissing %in% sdl_complete_predicted$date)
 
 
-sdlppt_out_complete <- subset(chartppt, local_site == "sdl") %>%
+sdlppt_out_complete <- subset(chartppt, local_site == "sdl" & date >= sdl_start) %>%
   # now make sure qdays > 1 have the raw measurement unless there is a qc note on it
   mutate(ppt_tot = ifelse(qdays > 1, raw, measurement)) %>%
   left_join(sdl_complete_predicted) %>%

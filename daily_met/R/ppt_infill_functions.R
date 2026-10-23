@@ -309,8 +309,9 @@ tk_ppt_historicfill <- function(dat, target_site, missing_dates, site_order, qda
       wide_df[paste0(target_site, "_ln")] <- ifelse(wide_df[[target_site]]>0, log(wide_df[[target_site]]), NA)
       wide_df[paste0(site, "_ln")] <- ifelse(wide_df[[site]]>0, log(wide_df[[site]]), NA)
       
-      # check that there are days where both target site and source station have value so can run lm model
-      if(all(is.na(wide_df[[paste0(target_site, "_ln")]][!is.na(wide_df[site])]))){
+      # check that there are days where both target site and source station have logged values so can run lm model
+      # (as in tk_ppt_seasonalfill; a source with only 0s on the shared days left lm with 0 cases)
+      if(all(is.na(wide_df[[paste0(target_site, "_ln")]][!is.na(wide_df[[paste0(site, "_ln")]])]))){
         next
       }
       # run lm model and store results

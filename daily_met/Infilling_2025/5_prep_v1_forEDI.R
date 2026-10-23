@@ -478,6 +478,7 @@ sapply(sdl_ppt_pretty[grepl("LTER|local|flag|source|qc", names(sdl_ppt_pretty))]
 names(sdl_ppt_pretty)
 names(tkd1_ppt) # put winteradj before precip
 # be sure to NA winter months ppt 1981 until Sep 1987 (all okay to leave after that)
+# (2025: 3P now starts the SDL record at 1987-06-01, so this no longer removes anything)
 sdl_ppt_pretty$remove <- with(sdl_ppt_pretty, month(date) %in% c(1:5, 10:12) & date < as.Date("1987-09-01"))
 
 sdl_ppt_pretty %>%

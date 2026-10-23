@@ -137,6 +137,14 @@ Changes needed to get there (beyond sections 1, 2 and 4):
   University Camp tmax 2010-05-01..2011-09-01) only NA'd a working copy; only `qcflag`
   is joined back, so ~970 bad values survived. `sensor_fail` now sets `qcflag`.
 - 2T AmeriFlux QC: flags were applied to `amerigl4` instead of `ameriflux` (typo); fixed.
+- 3P SDL precip now starts 1987-06-01. EDI knb-lter-nwt.315 already dropped Oct-May 1981-10 to
+  1987-05 for "unresolved data quality issues" (SDL:D1 winter ratio ~1 in WY1982-87 vs ~2 after), but
+  those years were still infilled and used as a source for D1. SDL rows before then are now dropped
+  from `alldats`. Rerun 2026-10-23: SDL net +141 mm over 1987-2026 (regressions no longer fit to
+  1981-87); D1 -30 mm (SDL no longer a source 1980-87); C1 unchanged. Jun-Sep 1981-86 SDL (judged
+  fine in the EDI metadata) are dropped too.
+- `tk_ppt_historicfill()`: the overlap check before `lm()` now requires positive source values,
+  as `tk_ppt_seasonalfill()` already did (a source with only 0s on shared days crashed lm).
 - 2P US-NR1 precip: from 2011 it is Boulder 14 W (USW00094075) re-reported (r = 0.999-1.000,
   same annual totals), so it duplicated that source and bypassed its NAs. Only 1998-2010 (the
   tower's own gauge) is now written out for infilling; it still feeds the cross-station check.
