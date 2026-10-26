@@ -59,7 +59,6 @@ Applies to every dataset:
 
 - **Same source and regression changes as C1:** ETI gauge added, US-NR1 limited to 1998–2010, GHCN in mm, negative slopes rejected, tie-break fix.
 - **Saddle source cut:** Saddle is no longer used as a source before 1987-06-01 (see Saddle precipitation below).
-- **One raw day removed:** 2011-12-29 (13 mm) falls inside the 19-day accumulation read on 2012-01-16. It is now infilled rather than kept raw.
 - **Republished from 1980; 1952–1979 unchanged:**
   - 1980–2010 re-infilled.
   - Three large isolated raw days (1983-01-14, 1986-04-22, 2010-01-11) are now flagged by the cross-station QC and infilled as 0.

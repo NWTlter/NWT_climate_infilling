@@ -202,7 +202,8 @@ summary(sdlppt_out_complete)
 
 
 # -- INFILL D1 -----
-#!BUG (fixed 2025 in 2P: the raw "n" flag no longer puts this qdays-removed value back)
+#!BUG not used: 2011-12-29 (13 mm) is a valid 1-day reading. The 2012-01-16 accumulation is 18 days, not 19
+# (corrected in 2P before the qdays check, and below), so 2011-12-29 is kept rather than NA'd as here
 # alldats <- alldats |> 
 #   dplyr::mutate(
 #     measurement = ifelse(

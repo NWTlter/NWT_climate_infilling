@@ -342,9 +342,11 @@ the record, not just the newest years. The earlier rows are kept exactly as post
   which is also the new start of that record).
 - **Precip note fix (review finding):** 2P read the 2011+ raw flags `n` (no flag) and `m` (missing)
   as old infill. In the SDL publish file, every raw day from 2011 on was labelled "'Raw' value
-  infilled by outdated method…". `raw_flagged` now excludes `n`/`m`. Side effect: D1
-  2011-12-29 (13 mm, inside the 2012-01-16 19-day accumulation) stays removed by the qdays
-  check and is infilled. This is the 3P `#!BUG` case.
+  infilled by outdated method…". `raw_flagged` now excludes `n`/`m`. That exposed D1
+  2011-12-29: 2P's qdays check removed its 13 mm reading because 2012-01-16 is recorded as a
+  19-day total, and the old note bug had put it back. The total is really 18 days (Dec 29
+  has its own reading; 3P already corrects it), so 2P now corrects it to 18 before the check
+  and Dec 29 stays raw.
 - **Review finding #4 checked:** the posted Saddle HMP and "Nonsensical qday" notes missing from the
   new 2020–22 rows are days that are now missing (`m`/NA) in the raw EDI data. They are infilled
   either way. Three HMP days CTW removed for "rate change" are now kept: 2020-12-23 HMP3 min,

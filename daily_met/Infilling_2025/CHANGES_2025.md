@@ -101,7 +101,8 @@ kept exactly as posted on EDI.
 |---|---|---|
 | Cross-station check now sees GHCN in mm (2.1). The rules themselves are CTW's, unchanged since v1. | All precip | 109 SDL days flagged in total, 94 of them already flagged in earlier years. New: 15 SDL days (1990–2019, 33–127 mm, e.g. 2019-01-22 127 → 10.8 mm), D1 1983-01-14, 1986-04-22, 2010-01-11 (plus 3 pre-1980), and C1 2024-03-16 (15 → 0 mm). Reviewed and kept (`data/plots/qc_review/ppt_new_flags_sdl_c1.png`). |
 | US-NR1 precip written out for infilling only for 1998–2010. From 2011 it is Boulder 14 W (USW00094075) re-reported (r = 0.999–1.000, same annual totals). It duplicated that source and let days NA'd at Boulder 14 W back in. It still feeds the cross-station check, which CTW's rules need (`ameri_pos`). | All precip | Rerun 2026-10-22: net −6 mm C1, −22 mm D1, −4 mm SDL over the whole record. QC flags unchanged. |
-| The "infilled by outdated method" note now uses only the pre-2011 raw flags `1`/`2` (old infill). From 2011, EDI 416 marks every day `n` (no flag), `m` (missing) or `q`, and `n`/`m` had been read as old infill. | All precip | Notes: about 4,550 raw SDL days from 2011 on had been labelled "'Raw' value infilled by outdated method…" in the published file, although they are raw. These notes, and the matching C1/D1 notes, are removed. Values: one D1 day changes. On 2011-12-29, 13 mm falls inside the 19-day accumulation read on 2012-01-16, so the qdays check removes it. The old note had made 2P put the raw value back; this was the `#!BUG` in 3P. The day is now infilled (6.5 mm). Over the record, 18 other D1 and 16 SDL infilled days move by less than 2 mm. |
+| The "infilled by outdated method" note now uses only the pre-2011 raw flags `1`/`2` (old infill). From 2011, EDI 416 marks every day `n` (no flag), `m` (missing) or `q`, and `n`/`m` had been read as old infill. | All precip | Notes: about 4,550 raw SDL days from 2011 on had been labelled "'Raw' value infilled by outdated method…" in the published file, although they are raw. These notes, and the matching C1/D1 notes, are removed. Values unchanged (see next row). |
+| D1 2012-01-16 accumulation corrected from 19 to 18 days in 2P, before the qdays check. 2011-12-29 has its own 1-day reading (13 mm), so the period is Dec 30 – Jan 16; 3P already made this correction, but only after 2P's check had removed the Dec 29 reading. Before the note fix, the old note bug happened to restore it. | D1 precip | 2011-12-29 kept raw (13 mm), as in the posted data. The commented `#!BUG` block in 3P (which would remove it) stays unused. |
 
 ### 2.4 Temperature infilling (3T, `temp_infill_functions.R`)
 
@@ -225,9 +226,51 @@ All write to `daily_met/Infilling_2025/data/plots/`; see `data/plots/README.md` 
   - D1 chart Tmin kept raw Apr–Aug 2025 while Tmax was bad.
   - Weak D1 DTR fits (median r² ~0.3).
   - D1 2025-12-13 to 16 15.2 mm accumulation while neighbors were dry.
-  - SDL CR21x before mid-1992: measured Tmax runs ~1–3 °C warmer relative to the SDL chart
-    and D1 than in later CR21x years (largest in 1990). CTW's CR21x adjustment is 0, and the
-    re-infill (fit mostly to later years) doesn't share the offset. Not changed.
+  - SDL CR21x before mid-1992: see "To ponder for next year" below. Left as is for 2025.
+
+### To ponder for next year: Saddle CR21x adjustment (deferred 2026-10-26)
+
+The 2025 rebuild keeps CTW's homogenization of the pre-HMP Saddle loggers and only replaces
+her infill. CTW's CR21x adjustment is 0, and that is kept for 2025. Things to look at:
+
+- **What CTW did.** Constant offsets per logger and variable, from the mean difference
+  logger − US-NR1 over all overlap days, relative to the same difference for the HMPs
+  (v1 `4T_homogenize_sdlts.R`, section CALCULATE ADJUSTMENTS / MAKE HOMOGENIZED DAT). Not
+  regressions. She also compared each logger with the SDL chart in its first and last
+  year, but didn't use it ("if sdl chart is drifting at all, then these comparisons
+  aren't helpful").
+- **CR21x was computed, then set to 0** (`adjustment = ifelse(grepl("hmp|21x", logger), 0,
+  adjustnr1)`), with no comment why. Rerunning her method on the 2025 data reproduces her
+  CR23x/CR1000 values within 0.1 °C and gives CR21x Tmax +0.60, Tmin −0.02, Tmean +0.26 °C.
+  That rests on only 601 days (Nov 1998 – Jun 2000), because US-NR1 starts in 1998.
+- **The CR21x may not be one homogeneous series.** Measured CR21x minus the SDL chart,
+  D1 chart and D1 CR21x shows Tmax ~1–3 °C warmer in 1990–1992 than from 1993 on (largest
+  in 1990; e.g. vs SDL chart +3.1 in 1990, ~+0.2–0.8 from 1993). Tmin is noisier. CTW's note
+  says the CR21x "starts recording mostly its own data" in July 1992. Before then the
+  record is ~37% infilled, and 1988–89 have no logger data at all.
+- **It shows in the daily range.** Measured DTR: CR21x to Jun 1992 10.9 °C (451 days),
+  CR21x Jul 1992–2000 8.7, CR23x 8.4, CR1000 8.2 (similar gap in Jan and Jul). In
+  1987–1991 almost all infilled days are whole days (1,569; only 10 min-only), with max/min
+  = predicted mean ± DTR/2. The 2025 DTR prediction (8.96, fit to 1986–2017) is narrower
+  than CTW's (9.34, fit to the CR21x alone), which is why the 2025 infilled Tmin is +0.3 °C
+  and Tmax −0.08 °C vs CTW there.
+- **The 2025 re-infill does not share the offset.** Its regressions are fit mostly to
+  post-1992 data, so in 1987–1991 the measured days (warm Tmax) and re-infilled days sit at
+  different levels relative to the chart. CTW's infill had the same issue.
+- **Options:**
+  1. Leave as is (2025 choice).
+  2. Use CTW's NR1-based CR21x offset (+0.6 Tmax etc.). Simple, but it covers 1998–2000
+     only and has the opposite sign to the early warm Tmax.
+  3. A separate pre-mid-1992 CR21x adjustment against a reference that spans the change
+     (SDL chart, D1 chart, D1 CR21x). First check whether that reference is itself stable
+     across 1990–1994, and whether a sensor, shield or siting change is documented (EDI
+     logger package metadata, field notes).
+  4. Treat early CR21x days that fail a chart/D1 comparison as suspect and infill them.
+- **Where it would go:** `2T_sdl_homogenized.R` builds the series from 314 and could
+  apply a revised CR21x adjustment before the QC pass. 3T/4T would then run unchanged,
+  and 4T writes `airtemp_*_adjustment` from that file.
+- **Review files:** `data/plots/qc_review/sdl_temp_rebuild_vs_posted.png` (annual means,
+  posted vs 2025).
 
 ## 7. Commits
 

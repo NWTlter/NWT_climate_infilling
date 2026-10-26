@@ -48,6 +48,10 @@ tkppt <- stackData(tkppt)
 # checks for 1) dates with non-NA values [in ppt or qdays] that fall in a qdays > 1 backfill period
 # and 2) NAs non-sensical qdays values (will report what the values were)
 # both of these checks add a qc note so can pull up just the records that were flagged
+# d1 2012-01-16 172 mm is recorded as a 19-day total, but 2011-12-29 has its own 1-day reading (13 mm),
+# so the period is 2011-12-30 to 2012-01-16 = 18 days (as 3P corrects it). Correct it before the check,
+# otherwise the check NAs the valid 2011-12-29 reading
+chartppt$qdays[chartppt$local_site == "d1" & chartppt$date == as.Date("2012-01-16")] <- 18
 chartppt_out <- qc_qdays(chartppt, "local_site")
 # subset which flagged values to visual review
 reviewdat <- subset(chartppt_out, grepl("ppt value falls", qdays_qcnote))
