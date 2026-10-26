@@ -7,7 +7,7 @@ Applies to every dataset:
 
 - Rerun end to end on fresh downloads of all sources.
 - Republished from the start of each re-infill, so the fixes apply back through the
-  record: C1/D1 from 1980, Saddle temp from 2020, Saddle precip from 1987-06-01.
+  record: C1/D1 from 1980, Saddle temp from 1986-12-06, Saddle precip from 1987-06-01.
   Earlier rows are kept exactly as posted. Files are in `data/publish/full_record/` and
   end 2025-12-31.
 
@@ -38,9 +38,13 @@ Applies to every dataset:
 ## Saddle temperature (knb-lter-nwt.314, `sdl_daily_airtemp_gapfilled.cw.data.csv`)
 
 - **Main change:** the Saddle HMP infill now draws on other NWT loggers in the multi-year regressions. A bug had excluded them all. For example, HMP 3 went from 56 to 670 of 671 infilled days using on-site sensors.
+- **Whole record re-infilled from 1986-12-06:**
+  - CTW's homogenized pre-HMP series (CR21x, CR23x, CR1000; 1986–2017) is kept for every measured day, including CTW's adjustments and manual fixes.
+  - Only CTW's infilled days are re-infilled with the 2025 methods, mostly 1987–1991. 1988–89 had no logger data.
+  - The HMPs are infilled from 2018, when they were installed.
+- **2025 QC on the old series:** two CR21x minimums (1992-08-30 and -31) removed after review.
+- **Effect:** annual means change mainly in 1987–1991 (Tmean up to +0.2 °C, Tmin up to +0.4 °C). The 1987–2019 Tmean trend is 0.45 °C/decade (was 0.47).
 - **Same source fixes as C1/D1:** GHCN units, SNOTEL/AmeriFlux QC, the D1 HMP 2018–19 removal, and negative-slope rejection.
-- **Homogenization (4T):** unchanged.
-- **Republished from 2020; 1986–2019 unchanged.** 2020 is where this pipeline's HMP infill starts. Earlier years are CTW's homogenized multi-logger series, which this workflow does not rebuild. For 2020–2025, CTW's adjustment and gap-fill columns are blank (only the HMP columns apply), as in the 2022–2024 rows already on EDI.
 
 ## C1 precipitation (knb-lter-nwt.184, `c1_infilled_precip_daily.tk.data.csv`)
 

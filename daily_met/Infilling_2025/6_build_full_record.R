@@ -4,7 +4,8 @@
 #
 # Re-infill starts (earlier rows are kept exactly as posted):
 #   C1/D1 temp and precip  1980-01-01  first year with neighbor sources (2T drops GHCN before 1980)
-#   SDL temp               2020-01-01  SDL HMP infill start in 3T; 1986-2019 is CTW's homogenized series
+#   SDL temp               1986-12-06  whole record is new: CTW's homogenized 1986-2017 series re-infilled
+#                                      (2T_sdl_homogenized.R, 3T) and the HMPs from 2018
 #   SDL precip             1987-06-01  whole record is new; posted 1981-1987 rows are dropped (3P)
 #
 # The NWT_metadata reformat scripts append only rows after the last posted date, so these
@@ -26,7 +27,7 @@ datasets <- tribble(
   187,     "d1_daily_airtemp_gapfilled_ongoing.csv",    as.Date("1980-01-01"),   TRUE,         "d1_infilled_temp_daily.tk.data.csv",
   184,     "c1_daily_precip_gapfilled_ongoing.csv",     as.Date("1980-01-01"),   TRUE,         "c1_infilled_precip_daily.tk.data.csv",
   186,     "d1_daily_precip_gapfilled_ongoing.csv",     as.Date("1980-01-01"),   TRUE,         "d1_infilled_precip_daily.tk.data.csv",
-  314,     "sdl_daily_airtemp_gapfilled_ongoing.csv",   as.Date("2020-01-01"),   TRUE,         "sdl_daily_airtemp_gapfilled.cw.data.csv",
+  314,     "sdl_daily_airtemp_gapfilled_ongoing.csv",   as.Date("1986-12-06"),   FALSE,        "sdl_daily_airtemp_gapfilled.cw.data.csv",
   315,     "sdl_daily_precip_gapfilled_ongoing.csv",    as.Date("1987-06-01"),   FALSE,        "sdl_daily_precip_gapfilled.cw.data.csv"
 )
 
@@ -64,7 +65,7 @@ for (i in seq_len(nrow(datasets))) {
   names(new)[names(new) == "infill_QAnote"] <- "infill_QA_note"
   new <- new[names(new) != "raw_Tmean"]
   stopifnot(all(names(new) %in% names(posted)))
-  # SDL temp: CTW's adjustment/gap-fill columns don't exist for the HMP-only years
+  # columns step 5 doesn't write are left blank
   for (col in setdiff(names(posted), names(new))) new[[col]] <- NA_character_
   new$local_site <- unique(posted$local_site)
   if (d$edi_id %in% c(185, 187)) new <- carry_qa(new, posted)

@@ -40,17 +40,17 @@ kept exactly as posted on EDI.
 | D1 temp (187) | 1952 – 1979 | 1980 – 2025 | 2022 on, appended |
 | C1 precip (184) | 1952 – 1979 | 1980 – 2025 | 2022 on, appended |
 | D1 precip (186) | 1952 – 1979 | 1980 – 2025 | 2022 on, appended |
-| SDL temp (314) | 1986-12-06 – 2019 (CTW homogenized series) | 2020 – 2025 | 2023 on, appended |
+| SDL temp (314) | none (CTW's measured values reused, see 2.4) | 1986-12-06 – 2025 | 2023 on, appended |
 | SDL precip (315) | none (posted 1981 – May 1987 dropped) | 1987-06-01 – 2025 | 2023 on, appended |
 
 - **Why 1980 for C1/D1:** it is the earliest year the current neighbor sources support.
   2T drops GHCN before 1980, and SNOTEL starts 1979–80. Going earlier would need older
   co-op stations added to script 1: Estes Park USC00052759, Fraser USC00053113, Berthoud
   Pass USC00050674, Caribou Ranch USC00051342. The 1980 cut in 2T would also need removing.
-- **Why 2020 for SDL temp:** this pipeline only rebuilds the HMP era, and 3T infills the
-  SDL HMPs from 2020. Before that, knb-lter-nwt.314 is CTW's homogenized multi-logger
-  series, which this workflow does not regenerate. The new series matches 314 exactly
-  in 2018–2019, apart from 15 days that the new run leaves unfilled before 2020.
+- **SDL temp, whole record:** CTW's homogenization of the pre-HMP loggers (CR21x
+  1986–2000, CR23x 2000–2012, CR1000 2012–2017: raw + a constant per logger and variable,
+  CR21x 0, plus manual fixes) is kept. Only CTW's infill is replaced (2.4). The HMPs are
+  infilled from 2018, when they were installed.
 - **Why 1987-06-01 for SDL precip:** see 2.5. The posted Jun–Sep 1981–86 values are dropped too.
 - **Files:**
   - `data/publish/full_record/`: one file per dataset, named and laid out exactly like
@@ -111,6 +111,8 @@ kept exactly as posted on EDI.
 | `mean_and_diurnalT()` builds Tmean/DTR per site. Before, if any site in a dataset reported a mean, sites that only report max/min (e.g. 21x loggers) got no mean and could not be used. | Mostly pre-2001 re-infill | 21x loggers usable as sources. Sites that do report a mean keep their NAs (they can be QC removals). |
 | `reject_neg_slope = T`: a source is rejected if either its Tmean or DTR fit has slope ≤ 0. The option defaults to `F`, so the 2022–2024 scripts behave as before. | All temp | Removes non-physical fits (mostly weak DTR fits). D1 temp: 6 published days changed; C1: none. |
 | C1/D1 infill start 2020 → 1980 | C1/D1 temp | 1980 is the first year with neighbor sources (2T drops GHCN before 1980). Now published from 1980 (see 1). |
+| **SDL pre-HMP series re-infilled (new `2T_sdl_homogenized.R`, 3T).** Reads CTW's homogenized 1986-12-06 – 2017-12-31 series from 314, keeps only measured values (raw + CTW adjustment, plus CTW's 60 values shifted −1 day in 1996–97) and blanks CTW's infill (~1,900–2,050 values per variable, mostly 1987–1991; 1988–89 have no logger data). Re-screens it with the 2025 all-logger QC pass (5 candidates; after review, CR21x Tmin 1992-08-30 and -31 removed, 4–8 °C below the SDL chart and D1). 3T infills it as one target (`sdl_homog`), with the CR21x neighbor order minus the raw SDL loggers. | SDL temp | Measured values unchanged except 2 days (1994-02-09, 2003-11-21) where `calculate_minmax()` rejects a measured mean inconsistent with the missing extreme, as for every target. Re-infilled days vs CTW: Tmax −0.05, Tmin +0.27, Tmean +0.09 °C (sd ~1). Annual means change mainly 1987–1991 (Tmean 0 to +0.2, Tmin +0.2 to +0.4). Trend 1987–2019: Tmax 0.22 → 0.24, Tmin 0.70 → 0.64, Tmean 0.47 → 0.45 °C/decade. |
+| SDL HMP infill start 2020 → 2018 | SDL temp | 2018–2019 re-infilled (they were CTW's). Annual means unchanged to 0.03 °C. |
 
 ### 2.5 Precipitation infilling (3P, `ppt_infill_functions.R`)
 
@@ -125,25 +127,29 @@ kept exactly as posted on EDI.
 
 ### 2.6 Homogenization and publishing (4T, step 5)
 
-- **4T:** only the input file name changed (`sdlhmp_infilled_2025.rds`); the
-  homogenization method is the same.
+- **4T:** reads `sdlhmp_infilled_2025.rds` and, new, `sdlhomog_infilled_2025.rds`. The
+  pre-HMP rows (1986–2017) get the posted 314 columns: homogenized = the re-infilled
+  series, CTW's adjustment, gapfilled = homogenized − adjustment, flags (same rules as
+  the HMPs, now a function `infill_flags()`), sources and regressions from 3T, and CTW's
+  qc flags and raw values (the 1992 removals noted in the qc flag).
 - **Step 5:**
   - C1/D1 read the currently posted EDI versions via `getTabular()` instead of pinned URLs.
   - SDL step 5 still contains the 1981–Sep 1987 winter-removal filter. It now removes
     nothing, because the SDL record starts 1987-06-01.
-  - Publish windows widened. C1/D1 go from `yr > 2021` to `yr >= 1980`. SDL temp goes
-    from `year >= 2023` to `year >= 2020`. SDL precip is no longer filtered, so it starts
+  - Publish windows widened. C1/D1 go from `yr > 2021` to `yr >= 1980`. SDL temp is no longer filtered
+    (1986-12-06 on), and keeps the adjustment, flag, regression, qc and raw columns for
+    the pre-HMP rows; the H/A summary flags are set only on HMP rows. SDL precip is no longer filtered, so it starts
     1987-06-01. Output columns and flags are unchanged.
 - **New `6_build_full_record.R`:**
   - Reads each posted EDI table.
-  - Keeps its rows before the re-infill start, except SDL precip, which keeps none.
+  - Keeps its rows before the re-infill start, except SDL temp and precip, which keep none.
   - Appends the step-5 rows up to 2025-12-31.
   - Applies the column fixes the reformat scripts make:
     - `regression_regression` → `regression`
     - `infill_QAnote` → `infill_QA_note`
     - drop `raw_Tmean`
     - EDI `local_site`
-    - for SDL temp, CTW's adjustment/gap-fill columns left blank
+    - columns step 5 doesn't write left blank (e.g. CTW's adjustment/gap-fill columns on HMP rows)
   - C1/D1 temp: carries CTW's `Tmax_QAflag`, `Tmin_QAflag` and `infill_QA_note` from the
     posted rows, by date, for 1980 on. A flag is carried only where the new value equals the
     posted value or the posted raw value. This workflow doesn't create these flags, and
@@ -210,8 +216,8 @@ All write to `daily_met/Infilling_2025/data/plots/`; see `data/plots/README.md` 
 - **EDI update:** the `full_record/` files replace the posted tables rather than append
   to them. The NWT_metadata reformat scripts (append-only) don't apply. Package text to
   update:
-  - Methods: re-infilled with the 2025 methods from 1980 (C1/D1), from 2020 (SDL temp)
-    and from 1987-06-01 (SDL precip).
+  - Methods: re-infilled with the 2025 methods from 1980 (C1/D1), from 1986-12-06 (SDL
+    temp, CTW's homogenized measured values re-infilled) and from 1987-06-01 (SDL precip).
   - SDL precip record now starts 1987-06-01.
 - **2026:** the `_ongoing` files still run into 2026; `full_record/` stops at 2025-12-31
   (`last_date` in `6_build_full_record.R`).
@@ -219,6 +225,9 @@ All write to `daily_met/Infilling_2025/data/plots/`; see `data/plots/README.md` 
   - D1 chart Tmin kept raw Apr–Aug 2025 while Tmax was bad.
   - Weak D1 DTR fits (median r² ~0.3).
   - D1 2025-12-13 to 16 15.2 mm accumulation while neighbors were dry.
+  - SDL CR21x before mid-1992: measured Tmax runs ~1–3 °C warmer relative to the SDL chart
+    and D1 than in later CR21x years (largest in 1990). CTW's CR21x adjustment is 0, and the
+    re-infill (fit mostly to later years) doesn't share the offset. Not changed.
 
 ## 7. Commits
 

@@ -90,9 +90,10 @@ All scripts run end to end from the repo root (exit 0):
 |---|---|---|
 | `1_prepare_climate_data.R` | ~5 min, ~2.7 GB | `data/prep/` |
 | `2T_qc_temp_data.R` | ~40 s | `data/qc/*TEMP_qc.rds`, `*TEMP_ready.rds` |
+| `2T_sdl_homogenized.R` | ~1 min | `data/qc/sdlhomogTEMP_qc.rds`, QC candidate plot in `data/plots/qc_review/` |
 | `2P_qc_precip_data.R` | ~30 s | `data/qc/*PPT_qc.rds` |
 | `3P_gapfill_precip.R` | ~14 min | `data/infill/*PPT_infilled_draft.*` |
-| `3T_gapfill.R` | ~8 min | `data/infill/*_chart_infilled_v1.*`, `sdlhmp_infilled_2025.rds` |
+| `3T_gapfill.R` | ~8 min | `data/infill/*_chart_infilled_v1.*`, `sdlhmp_infilled_2025.rds`, `sdlhomog_infilled_2025.rds` |
 | `4T_homogenize_sdlts.R` | ~3 s | `data/homogenize/` |
 | `5_prep_v1_forEDI.R`, `c1/`, `d1/` | ~25 s each | `data/publish/*_gapfilled_ongoing.csv` |
 | `6_build_full_record.R` | ~1 min | `data/publish/full_record/*.csv` (EDI-ready full tables) |
@@ -277,7 +278,7 @@ infilled_viz_check). Remaining work is data decisions, then a final rerun and re
   `mean_and_diurnalT()` now computes tmean for sites that never report one (21x loggers).
 - 2T keeps 21x values (their packages have no flags); CTW's QC flags are applied via
   `logger_prep` as for other loggers. 21x is a usable source for 1986-2000.
-- 3T now infills C1/D1 from 1980 (was 2020); SDL HMPs still from 2020 (record starts 2018).
+- 3T now infills C1/D1 from 1980 (was 2020) and the SDL HMPs from 2018 (was 2020).
   Now republished from 1980 (section 10).
 - `qc_compare_old_infill.R` compares with the published EDI infill (knb-lter-nwt.184-187),
   1980-2024 -> `data/plots/qc_compare_old_infill/`. Raw days identical in both. Days infilled
@@ -305,21 +306,27 @@ the record, not just the newest years. The earlier rows are kept exactly as post
 | EDI | Kept as posted | New |
 |---|---|---|
 | 184/185/186/187 C1/D1 precip and temp | 1952-1979 | 1980-2025 |
-| 314 SDL temp | 1986-12-06 - 2019 (CTW homogenized multi-logger series) | 2020-2025 |
+| 314 SDL temp | none (CTW's measured homogenized values reused) | 1986-12-06 - 2025 |
 | 315 SDL precip | none (posted 1981 - May 1987 dropped) | 1987-06-01 - 2025 |
 
 - **1980 is the limit with the current sources.** 2T drops GHCN before 1980 and SNOTEL
   starts 1979-80. Going earlier needs the older co-op stations listed in section 9 and
   the 2T cut removed.
 - **SDL temp:**
-  - This pipeline only rebuilds the HMP era, and 3T infills the HMPs from 2020.
-  - The new series equals 314 in 2018-2019, except 15 days in 2019 that the new run leaves unfilled.
-  - CTW's adjustment and gap-fill columns are blank from 2020, as in the 2022-2024 rows already on EDI.
-- **Step 5 publish filters:** C1/D1 now `>= 1980` (was `> 2021`). SDL temp `>= 2020`
+  - 1986-12-06 - 2017: `2T_sdl_homogenized.R` takes CTW's homogenized CR21x/CR23x/CR1000
+    series from 314, blanks CTW's infill, re-screens it with the 2025 all-logger QC (two
+    CR21x Tmin values removed after review, 1992-08-30/31), and 3T re-infills it as one
+    target (`sdl_homog`). 4T writes it in the 314 layout with CTW's adjustments, qc flags
+    and raw values; gapfilled = homogenized - adjustment.
+  - HMPs infilled from 2018. CTW's adjustment and gap-fill columns are blank from 2018,
+    as in the 2022-2024 rows already on EDI.
+  - Open: CR21x Tmax before mid-1992 runs ~1-3 C warm relative to the SDL chart and D1
+    compared with later CR21x years (CTW's CR21x adjustment is 0). Not changed.
+- **Step 5 publish filters:** C1/D1 now `>= 1980` (was `> 2021`). SDL temp unfiltered
   (was `>= 2023`). SDL precip unfiltered (was `>= 2023`).
 - **`6_build_full_record.R`** (run after step 5):
   - Downloads each posted table.
-  - Keeps the rows before the new start.
+  - Keeps the rows before the new start (none for SDL temp and precip).
   - Appends the step-5 rows through `last_date` (2025-12-31).
   - Applies the same column fixes the NWT_metadata reformat scripts make.
   - Checks for duplicate and missing dates.
@@ -331,7 +338,7 @@ the record, not just the newest years. The earlier rows are kept exactly as post
   they don't apply to a full replacement.** Use the `full_record/` files directly. Not
   changed in NWT_metadata.
 - **Package text to update:** the methods should say the data were re-infilled with the
-  2025 methods from 1980 (C1/D1), from 2020 (SDL temp) and from 1987-06-01 (SDL precip,
+  2025 methods from 1980 (C1/D1), from 1986-12-06 (SDL temp) and from 1987-06-01 (SDL precip,
   which is also the new start of that record).
 - **Precip note fix (review finding):** 2P read the 2011+ raw flags `n` (no flag) and `m` (missing)
   as old infill. In the SDL publish file, every raw day from 2011 on was labelled "'Raw' value

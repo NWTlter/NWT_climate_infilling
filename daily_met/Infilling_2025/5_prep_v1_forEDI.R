@@ -171,23 +171,28 @@ names(sdl_temp_pretty)[names(sdl_temp_pretty) == "yr"] <- "year"
 # applied to max, min, avg from non-hmp sources to 
 #cross calibrate them to extend HMPs. 
 
+# 2025: the pre-HMP rows (1986-2017, re-infilled CTW homogenized series) do have adjustment,
+# single-series flag, regression, qc and raw columns, so keep those too (blank for HMP rows)
 sdl_temp_pretty <- sdl_temp_pretty |> 
   dplyr::select(c(LTER_site:logger, year, date,
                   airtemp_max_homogenized, airtemp_min_homogenized, 
                   airtemp_avg_homogenized, dtr_homogenized,
-                  # airtemp_max_adjustment, airtemp_avg_adjustment,
-                  # airtemp_min_adjustment,
+                  airtemp_max_adjustment, airtemp_avg_adjustment,
+                  airtemp_min_adjustment,
                   contains("gapfill"),
+                  flag_1:raw_airtemp_avg_flag,
                   flag_1_hmp1:ncol(sdl_temp_pretty)))
 
+# HMP rows: summary flag H if any hmp was infilled
+hmp_rows <- grepl("hmp", sdl_temp_pretty$logger, ignore.case = TRUE)
 sdl_temp_pretty <- sdl_temp_pretty |> 
   dplyr::mutate(
-    flag_1 = ifelse(flag_1_hmp1 != 'A' | flag_1_hmp2 != 'A' | flag_1_hmp3 != 'A',
-                    'H', 'A'),
-    flag_2 = ifelse(flag_2_hmp1 != 'A' | flag_2_hmp2 != 'A' | flag_2_hmp3 != 'A',
-                    'H', 'A'),
-    flag_3 = ifelse(flag_3_hmp1 != 'A' | flag_3_hmp2 != 'A' | flag_3_hmp3 != 'A',
-                    'H', 'A'),
+    flag_1 = ifelse(!hmp_rows, flag_1,
+                    ifelse(flag_1_hmp1 != 'A' | flag_1_hmp2 != 'A' | flag_1_hmp3 != 'A', 'H', 'A')),
+    flag_2 = ifelse(!hmp_rows, flag_2,
+                    ifelse(flag_2_hmp1 != 'A' | flag_2_hmp2 != 'A' | flag_2_hmp3 != 'A', 'H', 'A')),
+    flag_3 = ifelse(!hmp_rows, flag_3,
+                    ifelse(flag_3_hmp1 != 'A' | flag_3_hmp2 != 'A' | flag_3_hmp3 != 'A', 'H', 'A')),
   )
 
 # -- Inspect regression flags ----
@@ -377,8 +382,7 @@ sapply(sdl_temp_pretty[grepl("source", names(sdl_temp_pretty))], unique)
 # write out csv with utf-8 and \r\n eol (end of line)
 # (need to change this in code settings, check it looks good after write out)
 
-# 2025: publish from 2020, where the SDL HMP infill starts (3T); 6_build_full_record.R adds the posted rows before
-sdl_temp_pretty <- sdl_temp_pretty |> dplyr::filter(year >= 2020)
+# 2025: publish the whole record (1986-2017 re-infilled from CTW homogenized series, HMPs from 2018)
 write.csv(sdl_temp_pretty, paste0(datpath, "publish/sdl_daily_airtemp_gapfilled_ongoing.csv"), row.names = F, na = "NaN", quote = T)
 
 # -- 2. PRETTY SDL PPT -----

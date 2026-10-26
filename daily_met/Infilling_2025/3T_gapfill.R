@@ -166,7 +166,8 @@ ggplot(d1_chart_predicted |> dplyr::filter(yr > 2020))+
 # -- INFILL SDL HMPs -----
 
 # -- sdl hmp 1 ----
-sdl1000_hmp_1_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_1", 2020)
+# HMPs installed 2018 (2025: was 2020; CTW's 2018-2019 HMP infill is replaced too)
+sdl1000_hmp_1_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_1", 2018)
 sdl1000_hmp_1_order <- with(allsites, paired_site[grepl("sdl_cr1000_hmp_1", local_site) & final_rank!= 1])
 # moving window infill
 sdl1000_hmp_1_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_1", missing_dates = sdl1000_hmp_1_missing, site_order =  sdl1000_hmp_1_order, reject_neg_slope = T)
@@ -194,7 +195,7 @@ ggplot(sdl1000_hmp_1_predicted) +
 
 
 # -- sdl hmp 2 ----
-sdl1000_hmp_2_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_2", 2020)
+sdl1000_hmp_2_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_2", 2018)
 sdl1000_hmp_2_order <- with(allsites, paired_site[grepl("sdl_cr1000_hmp_2", local_site) & final_rank!= 1])
 # moving window infill
 sdl1000_hmp_2_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_2", missing_dates = sdl1000_hmp_2_missing, site_order =  sdl1000_hmp_2_order, reject_neg_slope = T)
@@ -221,7 +222,7 @@ ggplot(sdl1000_hmp_2_predicted |> dplyr::filter(yr == 2025)) +
 
 
 # -- sdl hmp 3 ----
-sdl1000_hmp_3_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_3", 2020)
+sdl1000_hmp_3_missing <- idInfillDates(alldats, "sdl_cr1000_hmp_3", 2018)
 sdl1000_hmp_3_order <- with(allsites, paired_site[grepl("sdl_cr1000_hmp_3", local_site) & final_rank!= 1])
 # moving window infill
 sdl1000_hmp_3_season <- tk_temp_movingfill(alldats, target_site = "sdl_cr1000_hmp_3", missing_dates = sdl1000_hmp_3_missing, site_order =  sdl1000_hmp_3_order, reject_neg_slope = T)
@@ -247,6 +248,33 @@ ggplot(sdl1000_hmp_3_predicted) +
   geom_point(data = subset(sdl1000_hmp_3_predicted, flagmin), aes(date, airtemp_max), size = 2, col = "chocolate", alpha = 0.8) # only 1 date
 
 
+# -- INFILL SDL HOMOGENIZED LOGGER SERIES (1986-2017) -----
+# CTW's homogenized cr21x/cr23x/cr1000 series with CTW's infill removed, re-screened with
+# the 2025 QC (2T_sdl_homogenized.R). Infilled as one series so the regressions span the logger changes.
+sdl_homog_ready <- readRDS(rdsfiles_qc[grep("sdlhomogTEMP_qc", rdsfiles_qc)]) %>%
+  subset(select = c(date, yr, mon, doy, logger, metric, measurement, local_site))
+# only this target uses it: not in allsites, so no other site takes it as a source
+alldats_sdlhomog <- rbind(alldats, subset(mean_and_diurnalT(sdl_homog_ready), metric %in% c("airtemp_avg", "DTR"))[names(alldats)])
+sdl_homog_missing <- idInfillDates(alldats_sdlhomog, "sdl_homog", 1986)
+# same neighbors as the cr21x, without the raw saddle loggers (the same instruments, unadjusted)
+sdl_homog_order <- with(allsites, paired_site[local_site == "sdl_cr21x" & final_rank != 1 & !grepl("^sdl_cr", paired_site)])
+# moving window infill
+sdl_homog_season <- tk_temp_movingfill(alldats_sdlhomog, target_site = "sdl_homog", missing_dates = sdl_homog_missing, site_order = sdl_homog_order, reject_neg_slope = T)
+# historic infill
+sdl_homog_historic <- tk_temp_historicfill(alldats_sdlhomog, "sdl_homog", sdl_homog_missing, sdl_homog_order, reject_neg_slope = T)
+# model selection
+select_sdl_homog <- select_model(sdl_homog_historic, sdl_homog_season)
+# calculate regression derived tmin and tmax
+sdl_homog_predicted <- calculate_minmax(select_sdl_homog, sdl_homog_ready, "sdl_homog") %>%
+  subset(select = -c(flagmax, flagmin, flag_airtemp_avg, airtemp_avg_infill))
+
+# how does it look?
+ggplot(sdl_homog_predicted) +
+  geom_line(aes(date, airtemp_avg), col = "green", alpha = 0.3) +
+  geom_point(data = subset(sdl_homog_predicted, airtemp_max_method != "raw"), aes(date, airtemp_max), col = "red", alpha = 0.5) +
+  geom_point(data = subset(sdl_homog_predicted, airtemp_min_method != "raw"), aes(date, airtemp_min), col = "dodgerblue", alpha = 0.5)
+
+
 # -- stack all together ----
 sdl_hmps_predicted <- rbind(sdl1000_hmp_1_predicted, sdl1000_hmp_2_predicted, sdl1000_hmp_3_predicted) %>%
   arrange(date, local_site) %>%
@@ -266,5 +294,6 @@ write.csv(sdl_hmps_predicted, file = paste0(datpath,"infill/sdl_hmps_infilled_v1
           row.names = FALSE)
 
 saveRDS(sdl_hmps_predicted, paste0(datpath,"infill/sdlhmp_infilled_2025.rds"))
+saveRDS(sdl_homog_predicted, paste0(datpath,"infill/sdlhomog_infilled_2025.rds"))
 saveRDS(c1_chart_predicted, paste0(datpath,"infill/c1_chart_infilled_v1.rds"))
 saveRDS(d1_chart_predicted, paste0(datpath,"infill/d1_chart_infilled_v1.rds"))
