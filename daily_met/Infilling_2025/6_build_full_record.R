@@ -51,6 +51,11 @@ carry_qa <- function(new, posted) {
   new$Tmax_QAflag <- ifelse(max_same, pst$Tmax_QAflag, new$Tmax_QAflag)
   new$Tmin_QAflag <- ifelse(min_same, pst$Tmin_QAflag, new$Tmin_QAflag)
   new$infill_QA_note <- ifelse(max_same & min_same, pst$infill_QA_note, new$infill_QA_note)
+  # CTW's "Predicted infill chosen over known temperature-adjusted infill" days (2011-2018): 2T NAs the chart
+  # values on these days so both tmax and tmin are predicted again, so the note still applies where both are
+  # predicted (flag_2 B). Keeping it in the posted table also lets next year's 2T find these days
+  ctw_pred <- grepl("Predicted infill chosen", pst$infill_QA_note) & new$flag_2 %in% "B"
+  new$infill_QA_note <- ifelse(ctw_pred, pst$infill_QA_note, new$infill_QA_note)
   new
 }
 

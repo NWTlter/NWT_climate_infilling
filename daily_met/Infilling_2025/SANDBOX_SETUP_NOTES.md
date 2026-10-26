@@ -331,7 +331,9 @@ the record, not just the newest years. The earlier rows are kept exactly as post
   - Applies the same column fixes the NWT_metadata reformat scripts make.
   - Checks for duplicate and missing dates.
   - C1/D1 temp: carries CTW's QA flags and notes from posted rows (1980 on) where the
-    new value equals the posted value or posted raw.
+    new value equals the posted value or posted raw. CTW's "Predicted infill chosen over known
+    temperature-adjusted infill" note (2011-2018) is carried wherever both sides are still
+    predicted (flag_2 B; all 66 days), so next year's 2T can find those days in the republished tables.
   - Writes `data/publish/full_record/<EDI table name>`. Posted tables are read as text and
     written in EDI's quoting, so posted rows are byte-identical to EDI.
 - **The NWT_metadata reformat scripts only append rows after the last posted date, so

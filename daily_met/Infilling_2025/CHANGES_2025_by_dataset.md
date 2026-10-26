@@ -23,7 +23,7 @@ Applies to every dataset:
   Both are fixed. SNOTEL and AmeriFlux QC fixes also remove known-bad source values.
 - **Negative-slope fits rejected:** regressions where warmer at the source predicts colder at C1 are no longer used.
 - **New C1 sensors:** the CR1000X aspirated sensors (2025+) are kept as their own sources.
-- **CTW's QA flags kept:** the 1980–2024 `Tmax_QAflag`/`Tmin_QAflag` (e.g. "Artificial drop, shifted +1C") are carried from the posted data wherever the value is unchanged.
+- **CTW's QA flags kept:** the 1980–2024 `Tmax_QAflag`/`Tmin_QAflag` (e.g. "Artificial drop, shifted +1C") are carried from the posted data wherever the value is unchanged. CTW's 2011–2018 "Predicted infill chosen over known temperature-adjusted infill" note is also kept; those days are still fully predicted.
 - **Republished from 1980; 1952–1979 unchanged.** Raw days match the old series. Days infilled in both versions differ by ~1–2 °C (sd), with no bias.
 
 ## D1 temperature (knb-lter-nwt.187, `d1_infilled_temp_daily.tk.data.csv`)
@@ -32,7 +32,7 @@ Applies to every dataset:
 - **Bad D1 HMP period removed:** the D1 HMPs failed Jul 2018 – Mar 2019. That period is now `q`-flagged upstream and no longer used as a source.
 - **New D1 sensors:** the hv sensors (from Sep 2025) are added as sources after the HMPs end.
 - **Same source and regression fixes as C1:** GHCN units, NWT loggers in the multi-year regressions, SNOTEL/AmeriFlux QC, and negative-slope rejection.
-- **CTW's QA flags kept:** the 1980–2024 `Tmax_QAflag`/`Tmin_QAflag` (e.g. "temp shifted 4C warmer") are carried from the posted data wherever the value is unchanged.
+- **CTW's QA flags kept:** the 1980–2024 `Tmax_QAflag`/`Tmin_QAflag` (e.g. "temp shifted 4C warmer") are carried from the posted data wherever the value is unchanged. CTW's 2011–2018 "Predicted infill chosen over known temperature-adjusted infill" note is also kept; those days are still fully predicted.
 - **Republished from 1980; 1952–1979 unchanged.** About 230 days per variable that were raw in the old series are now infilled, mostly because of `q` flags.
 
 ## Saddle temperature (knb-lter-nwt.314, `sdl_daily_airtemp_gapfilled.cw.data.csv`)
