@@ -195,7 +195,8 @@ With `D=daily_met/Infilling_2026`:
 | 10 | `$D/c1/5_prep_v1_forEDI_c1.R` | ~25 s | `data/publish/c1_*_ongoing.csv` | |
 | 11 | `$D/d1/5_prep_v1_forEDI_d1.R` | ~25 s | `data/publish/d1_*_ongoing.csv` | |
 | 12 | `$D/6_build_full_record.R` | ~1 min | `data/publish/full_record/*.csv` | Its summary table: `first`/`last` dates, posted rows kept, new rows (append: 365 each), no duplicate or missing dates (it stops if there are). |
-| 13 | Review scripts: see section 6 | | | |
+| 13 | `$D/07_generate_provenance.R` | ~1 min | `provenance/knb-lter-nwt.<id>_provenance.txt` | Its summary line per package: the EDI packages, GHCN-Daily stations, SNOTEL sites, AmeriFlux sites and NPN used. It stops on a `source_station` code it can't match to a source (add it to `nwt_pkg()` or the station lists). |
+| 14 | Review scripts: see section 6 | | | |
 
 ```bash
 cd /path/to/NWT_climate_infilling
@@ -205,13 +206,14 @@ for s in 1_prepare_climate_data.R 2T_qc_temp_data.R 2T_sdl_homogenized.R 2P_qc_p
 done
 # ...review (section 5), then:
 for s in 3T_gapfill.R 3P_gapfill_precip.R 4T_homogenize_sdlts.R 5_prep_v1_forEDI.R \
-         c1/5_prep_v1_forEDI_c1.R d1/5_prep_v1_forEDI_d1.R 6_build_full_record.R; do
+         c1/5_prep_v1_forEDI_c1.R d1/5_prep_v1_forEDI_d1.R 6_build_full_record.R \
+         07_generate_provenance.R; do
   Rscript ~/run_one.R $D/$s || break
 done
 ```
 
-To rerun only temp after a QC change: 2T → 2T_sdl_homogenized → 3T → 4T → step 5 ×3 → 6.
-To rerun only precip: 2P → 3P → step 5 ×3 → 6. Step 5 writes temp and precip together,
+To rerun only temp after a QC change: 2T → 2T_sdl_homogenized → 3T → 4T → step 5 ×3 → 6 → 07.
+To rerun only precip: 2P → 3P → step 5 ×3 → 6 → 07. Step 5 writes temp and precip together,
 so it always runs whole.
 
 ## 5. QC review of 2026 source data (between 2P and 3T)
@@ -286,4 +288,12 @@ getting a `q` flag added upstream on EDI over NA-ing values in code.
    fixes, so use the `full_record/` files directly.
    - **Append:** update the package temporal coverage to 2026-12-31.
    - **Republish:** also update the methods text.
-3. Commit the `Infilling_2026` scripts and docs (not `data/`) on the feature branch.
+3. Give the six `provenance/knb-lter-nwt.<id>_provenance.txt` files to the IM team too, to
+   replace the provenance `methodStep`s in each package's EML methods. Before that:
+   - **Revisions:** each NWT source points to its newest EDI revision when 07 runs. If a
+     source package was revised after step 1 read it, set that `rev` by hand in `edi_source()`.
+   - **SNOTEL and NADP:** these entries are written in the script (`snotel_source()`,
+     `npn_source`), not read from a record. Check that the names, contacts and URLs still hold.
+   - GHCN-Daily (NCEI's ISO record) and AmeriFlux (the BIF files script 1 downloads) update
+     themselves; check the AmeriFlux versions match the `AMF_*_BASE_HH_*.csv` files used.
+4. Commit the `Infilling_2026` scripts, docs and `provenance/` (not `data/`) on the feature branch.
