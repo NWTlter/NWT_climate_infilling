@@ -54,3 +54,22 @@
  
  ################################################################################
  # Notes RE: flags and naming conventions
+@@ -145,12 +136,14 @@
+ d1_temp_pretty <- d1_temp_pretty %>%
+   mutate(
+     # Flagging based on method for flag_1
++    # method 1 (B/C) = same-season moving window, method 2 (D/E) = multi-year, as defined in the
++    # 185/187 metadata and used by TK and by SDL temp (was swapped here 2022-2024)
+     flag_1 = case_when(
+       is.na(method) ~ "A",
+-      grepl("multi", method) & airtemp_avg_pvalue <= 0.05 ~ "B",
+-      grepl("multi", method) & airtemp_avg_pvalue > 0.05 ~ "C",
+-      grepl("moving", method) & airtemp_avg_pvalue <= 0.05 ~ "D",
+-      grepl("moving", method) & airtemp_avg_pvalue > 0.05 ~ "E",
++      grepl("moving", method) & airtemp_avg_pvalue <= 0.05 ~ "B",
++      grepl("moving", method) & airtemp_avg_pvalue > 0.05 ~ "C",
++      grepl("multi", method) & airtemp_avg_pvalue <= 0.05 ~ "D",
++      grepl("multi", method) & airtemp_avg_pvalue > 0.05 ~ "E",
+       TRUE ~ NA_character_
+     ),
+     

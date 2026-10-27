@@ -26,10 +26,10 @@ Applies to every dataset:
 - **Negative-slope fits rejected:** regressions where warmer at the source predicts colder at C1 are no longer used.
 - **New C1 sensors:** the CR1000X aspirated sensors (2025+) are kept as their own sources.
 - **CTW's QA flags kept:** the 1980–2024 `Tmax_QAflag`/`Tmin_QAflag` (e.g. "Artificial drop, shifted +1C") are carried from the posted data wherever the value is unchanged. CTW's 2011–2018 "Predicted infill chosen over known temperature-adjusted infill" note is also kept; those days are still fully predicted.
+- **`flag_1` method letters fixed:** step 5 had swapped them since 2022 (multi-year as B, moving window as D). Now B/C = same-season and D/E = multi-year throughout, as the metadata defines. Only `flag_1` changed (481 rows).
 - **Negative predicted DTR set to 0:** a regression could predict a negative daily range, giving Tmax < Tmin. One day changed: 2014-07-30 (5.12 / 5.93 °C → 5.52 / 5.52).
 - **Republished from 1980; 1952–1979 unchanged.** Raw days match the old series. Days infilled in both versions differ by ~1–2 °C (sd), with no bias.
 - **Metadata to update** (same as D1; full text in `CHANGES_2025.md` §6):
-  - `flag_1`: B/C and D/E mean different methods before and after 1980. Before 1980, B/C = method 1 (same-season) and D/E = method 2 (multi-year), as defined now. From 1980 it is the reverse. No C or E rows exist yet.
   - `flag_1` and `flag_3`: the p-value cutoff is 0.05 (defined as 0.5).
   - `flag_2`: add `B*` = Tmax and Tmin both predicted because the known value, adjusted by the predicted DTR, was inconsistent with the predicted mean (5 rows).
 
@@ -40,9 +40,10 @@ Applies to every dataset:
 - **New D1 sensors:** the hv sensors (from Sep 2025) are added as sources after the HMPs end.
 - **Same source and regression fixes as C1:** GHCN units, NWT loggers in the multi-year regressions, SNOTEL/AmeriFlux QC, and negative-slope rejection.
 - **CTW's QA flags kept:** the 1980–2024 `Tmax_QAflag`/`Tmin_QAflag` (e.g. "temp shifted 4C warmer") are carried from the posted data wherever the value is unchanged. CTW's 2011–2018 "Predicted infill chosen over known temperature-adjusted infill" note is also kept; those days are still fully predicted.
+- **`flag_1` method letters fixed:** as for C1 (1,815 rows).
 - **Negative predicted DTR set to 0:** same fix as C1. No D1 day changed.
 - **Republished from 1980; 1952–1979 unchanged.** About 230 days per variable that were raw in the old series are now infilled, mostly because of `q` flags.
-- **Metadata to update:** the same `flag_1` (before/after 1980), p-value (0.05) and `flag_2` `B*` (28 rows) corrections as C1.
+- **Metadata to update:** the same p-value (0.05) and `flag_2` `B*` (28 rows) corrections as C1.
 
 ## Saddle temperature (knb-lter-nwt.314, `sdl_daily_airtemp_gapfilled.cw.data.csv`)
 

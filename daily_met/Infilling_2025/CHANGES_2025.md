@@ -113,6 +113,7 @@ kept exactly as posted on EDI.
 | `reject_neg_slope = T`: a source is rejected if either its Tmean or DTR fit has slope ≤ 0. The option defaults to `F`, so the 2022–2024 scripts behave as before. | All temp | Removes non-physical fits (mostly weak DTR fits). D1 temp: 6 published days changed; C1: none. |
 | C1/D1 infill start 2020 → 1980 | C1/D1 temp | 1980 is the first year with neighbor sources (2T drops GHCN before 1980). Now published from 1980 (see 1). |
 | **SDL pre-HMP series re-infilled (new `2T_sdl_homogenized.R`, 3T).** Reads CTW's homogenized 1986-12-06 – 2017-12-31 series from 314, keeps only measured values (raw + CTW adjustment, plus CTW's 60 values shifted −1 day in 1996–97) and blanks CTW's infill (~1,900–2,050 values per variable, mostly 1987–1991; 1988–89 have no logger data). Re-screens it with the 2025 all-logger QC pass (5 candidates; after review, CR21x Tmin 1992-08-30 and -31 removed, 4–8 °C below the SDL chart and D1). 3T infills it as one target (`sdl_homog`), with the CR21x neighbor order minus the raw SDL loggers. | SDL temp | Measured values unchanged except 2 days (1994-02-09, 2003-11-21) where `calculate_minmax()` rejects a measured mean inconsistent with the missing extreme, as for every target. Re-infilled days vs CTW: Tmax −0.05, Tmin +0.27, Tmean +0.09 °C (sd ~1). Annual means change mainly 1987–1991 (Tmean 0 to +0.2, Tmin +0.2 to +0.4). Trend 1987–2019: Tmax 0.22 → 0.24, Tmin 0.70 → 0.64, Tmean 0.47 → 0.45 °C/decade. |
+| C1/D1 step 5 `flag_1`: moving window now B/C and multi-year D/E (method 1 / method 2 in the 185/187 metadata, as TK's rows and SDL temp use). They had been swapped since the 2022 workflow. | C1/D1 temp | `flag_1` only, on 481 C1 and 1,815 D1 rows (1980–2025). Values unchanged. |
 | `calculate_minmax()`: a predicted DTR below 0 is set to 0. A regression intercept can predict a negative DTR, which gave Tmax < Tmin. | All temp | One published day: C1 2014-07-30 was Tmax 5.12 / Tmin 5.93 (DTR −0.81 from Boulder 14 W, `y = 1.49x − 3.78`); now 5.52 / 5.52. Nothing else changed. |
 | SDL HMP infill start 2020 → 2018 | SDL temp | 2018–2019 re-infilled (they were CTW's). Annual means unchanged to 0.03 °C. |
 
@@ -239,37 +240,32 @@ All write to `daily_met/Infilling_2025/data/plots/`; see `data/plots/README.md` 
 
 ### Metadata corrections for C1/D1 temp (knb-lter-nwt.185, .187)
 
-Found in the 2026-10-26 code review. The flag letters in the data are kept as they are; the
-attribute definitions need to change to match them.
+Found in the 2026-10-26 code review.
 
-1. **`flag_1`: the meaning of B/C vs D/E depends on the date.** The methods text calls the
-   same-season (moving-window) regression method 1 and the multi-year regression method 2.
-   TK's rows before 1980 follow that (B rows: regressions of 14–28 observations; D: 33–403).
-   Since the 2022 workflow, step 5 has coded multi-year as B/C and moving-window as D/E, and
-   the 2025 republish applies that to every row from 1980 (B: 14–469 observations; D: 7–28).
-   Saddle temp (314) and all three precip packages use the method 1 = same-season convention
-   throughout, so need no change.
-2. **`flag_1` and `flag_3`: the p-value cutoff is 0.05, not 0.5.** The code uses 0.05. No C/E
-   `flag_1` rows exist in either file, so this doesn't change how any row reads.
+1. **`flag_1` method letters fixed in the code, so no metadata change needed.** The metadata
+   and methods text define B/C = method 1 (same-season moving window) and D/E = method 2
+   (multi-year). TK's pre-1980 rows and SDL temp follow that, but C1/D1 step 5 had coded
+   multi-year as B/C and moving window as D/E since the 2022 workflow. Step 5 now uses the
+   metadata convention. In the republished files this changed only `flag_1`, on 481 C1 and
+   1,815 D1 rows (1980–2025). Every B row is now a moving-window fit (≤ 28 observations) and
+   every D row a multi-year fit, throughout the record. This also corrects the 2022–2024 rows
+   posted with the swapped letters.
+2. **`flag_1` and `flag_3`: the p-value cutoff is 0.05, not 0.5.** The code uses 0.05. Also in
+   C1/D1 precip (184, 186) `flag_1`. No C/E `flag_1` rows exist in the temp files, so this
+   doesn't change how any row reads.
 3. **`flag_2`: add `B*`.** Set when a known Tmax or Tmin, combined with the predicted DTR,
    was inconsistent with the predicted mean (Tmax ≤ Tmin, or the mean outside Tmin–Tmax).
    Both are then taken from the prediction (mean ± DTR/2). C1 5 rows, D1 28 rows (1980–2025).
    D1's posted 2019–2024 rows already had 3.
 
-Proposed definitions (same text for 185 and 187):
+Corrected definitions (same text for 185 and 187):
 
 | Attribute | Code | Definition |
 |---|---|---|
-| flag_1 | A | no infilling |
-| flag_1 | B | before 1980: infilled using method 1 (same-season regression), p < 0.05; from 1980: infilled using method 2 (multi-year regression), p < 0.05 |
-| flag_1 | C | before 1980: method 1, p > 0.05; from 1980: method 2, p > 0.05 |
-| flag_1 | D | before 1980: infilled using method 2 (multi-year regression), p < 0.05; from 1980: infilled using method 1 (same-season regression), p < 0.05 |
-| flag_1 | E | before 1980: method 2, p > 0.05; from 1980: method 1, p > 0.05 |
+| flag_1 | B / C | data infilled using method 1 (same-season regression) with p < 0.05 / p > 0.05 |
+| flag_1 | D / E | data infilled using method 2 (multi-year regression) with p < 0.05 / p > 0.05 |
 | flag_2 | B* | Tmax and Tmin both predicted (predicted mean ± predicted DTR/2) because the known Tmax or Tmin adjusted by the predicted DTR was inconsistent with the predicted mean |
 | flag_3 | B / C | DTR regression p < 0.05 / p > 0.05 |
-
-Also add a sentence to the methods: "Flag_1 codes B/C and D/E refer to different infill methods
-before and after 1980-01-01; see the flag_1 definitions."
 
 ### To ponder for next year: Saddle CR21x adjustment (deferred 2026-10-26)
 
@@ -334,4 +330,5 @@ her infill. CTW's CR21x adjustment is 0, and that is kept for 2025. Things to lo
 | `593eecc` | D1 2012-01-16 accumulation corrected before the qdays check; `qc_compare_republish.R`; CR21x note for next year |
 | `b55d298` | CTW's "Predicted infill chosen" note carried; `HOW_TO_RUN_2026_UPDATE.md` |
 | `0aee255` | Negative predicted DTR set to 0 (C1 2014-07-30); `getTabular()` reads only the requested entity; C1/D1 metadata corrections |
+| `f5e1d65` | CHANGES commit list and review-script table |
 | `b588167` | `diffs_vs_2024/` (each script vs 2024); metadata notes per dataset |
