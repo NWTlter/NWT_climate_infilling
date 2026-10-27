@@ -80,6 +80,15 @@ for (i in seq_len(nrow(datasets))) {
     select(all_of(names(posted))) %>%
     arrange(date)
 
+  # temp: no source station on measured days (flag_1 A), as in the step-5 rows; the posted pre-1980
+  # C1/D1 rows have "C1"/"D1" there. Precip keeps its gauge name on measured days (e.g. "C1 Belfort Shielded")
+  if (d$edi_id %in% c(185, 187, 314)) {
+    for (src in grep("^source_station", names(full), value = TRUE)) {
+      flag <- sub("source_station", "flag_1", src)
+      full[[src]][full[[flag]] %in% "A"] <- NA
+    }
+  }
+
   # every date once, no gaps
   dates <- as.Date(full$date)
   stopifnot(!any(duplicated(dates)), all(seq.Date(min(dates), max(dates), 1) %in% dates))

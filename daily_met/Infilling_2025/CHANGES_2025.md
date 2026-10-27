@@ -165,9 +165,15 @@ kept exactly as posted on EDI.
     `infill_QA_note` (2011–2018, 25 C1 / 41 D1 days) is carried wherever both sides are still
     predicted (flag_2 B; all 66 days). 2T reads it to find those days, so keeping it in the
     posted table means next year's run doesn't need the old EDI revisions.
+  - Temp (185, 187, 314): `source_station` is NaN wherever `flag_1` is A (measured), as
+    step 5 already writes it. The posted pre-1980 C1/D1 rows had "C1"/"D1" there (9,586 C1 /
+    9,037 D1 rows). Precip keeps the gauge
+    name on measured days (e.g. "C1 Belfort Shielded", "C1 Totalizing Unshielded"), since
+    it says which gauge measured.
   - Checks for duplicate and missing dates, then writes `data/publish/full_record/`.
   - Reads the posted tables as text and writes them in EDI's layout (all values quoted
-    except date and NaN), so posted rows are byte-identical to EDI. The first version read
+    except date and NaN), so posted rows are byte-identical to EDI apart from the
+    `source_station` change above. The first version read
     them as numbers, which trimmed 131 SDL temp p-values by one digit.
 
 ---
@@ -266,6 +272,32 @@ Corrected definitions (same text for 185 and 187):
 | flag_1 | D / E | data infilled using method 2 (multi-year regression) with p < 0.05 / p > 0.05 |
 | flag_2 | B* | Tmax and Tmin both predicted (predicted mean ± predicted DTR/2) because the known Tmax or Tmin adjusted by the predicted DTR was inconsistent with the predicted mean |
 | flag_3 | B / C | DTR regression p < 0.05 / p > 0.05 |
+
+### Metadata corrections: `source_station` codes (all six datasets)
+
+Checked 2026-10-27 against the latest EML on EDI (184.8, 185.5, 186.6, 187.5, 314.4,
+315.4). Every dataset uses codes the EML doesn't define. Some were already in the posted
+data; ★ = new with the 2025 re-infill.
+
+| Dataset | Codes to add |
+|---|---|
+| 184 C1 precip | USC00051681★, USW00094075, Niwot (663), University Camp (838)★, Lake Eldora (564)★, High Lonesome (1187), Sawtooth (1251), US-NR1, NPN★ |
+| 185 C1 temp | USC00050183★, USC00051681★, USC00053496★, USC00055878★, USW00094075, C1 logger CR21X★, C1 logger CR23X★, C1 logger CR1000★, C1 logger CR1000 ASP 1, C1 logger CR1000 HMP-1, C1 logger CR1000 HMP-2, C1 logger CR1000 HMP-3★, D1 chart★, D1 logger CR1000 HMP-3★, SDL chart★, GL4 logger CR1000★, Niwot (663), University Camp (838)★, Lake Eldora (564)★, Sawtooth (1251)★ |
+| 186 D1 precip | C1, USC00050183★, USC00051681★, USC00052761★, USC00053116★, USC00053496, USC00053500★, USC00055878★, USC00059175★, USW00094075, Niwot (663)★, University Camp (838), Lake Eldora (564)★, High Lonesome (1187)★, Sawtooth (1251), US-NR1, NPN★ |
+| 187 D1 temp | 050183, 050674, 051342, 052759, 053113, 053496, 053500 (posted pre-1980 rows; the EML has them without the leading 0), USC00050183★, USC00053496★, USC00053500, USC00055878★, USW00094075★, C1 chart, C1 logger CR1000 HMP-3★, D1 logger CR21X★, D1 logger CR23X★, D1 logger CR1000, D1 logger CR1000 HMP-1/HMP-2/HMP-3, D1 logger CR1000 HV 1★, D1 logger CR1000 HV 2★, SDL chart★, SDL logger CR21X★, SDL logger CR23X★, SDL logger CR1000★, SDL logger CR1000 HMP-1/HMP-2/HMP-3, GL4 logger CR1000★, GL4 logger CR850★, University Camp (838), Lake Eldora (564), High Lonesome (1187), Sawtooth (1251)★, US-NR1, US-NR3, US-NR4 |
+| 314 SDL temp | C1 logger CR21X, D1 logger CR21X, D1 logger CR23X (the EML has CR21x/CR23x; case only). `source_station_hmp1/2/3` complete. |
+| 315 SDL precip | NPN★ |
+
+Definitions: USC00050183 Allenspark (script comment says 2SE; the EML's 50183 says 2NNW,
+worth checking), USC00051681 Coal Creek Canyon, USC00052761 Estes Park 3 SSE, USC00053116
+Fraser, USC00053496 Grand Lake 1 NW, USC00053500 Grand Lake 6 SSW, USC00055878 Nederland
+2 NNE, USC00059175 Winter Park, USW00094075 Boulder 14 W (USCRN); "Name (number)" = NRCS
+SNOTEL site; US-NR1 / US-NR3 / US-NR4 = AmeriFlux Niwot Ridge forest / Tvan East / Tvan
+West; NPN = NADP ETI gauge at C1 (CO90); "<site> chart" = chart recorder;
+"<site> logger <model> [sensor]" = datalogger, with HMP-1/2/3, HV 1/2, ASP 1 the sensors.
+
+For 185 and 187 also: NaN = measured (`flag_1` A), no source station (step 6 now writes
+it that way for the whole record), and fix the "source statoin" typo.
 
 ### To ponder for next year: Saddle CR21x adjustment (deferred 2026-10-26)
 
