@@ -1,14 +1,29 @@
-## Miles used the scripts include here to infilling c1 data from 2023.
+## Daily met infilling, 2025 (re-infill of the full C1, D1 and Saddle records)
 
-These scripts should be run in 1,2,3,4,5 order + optionally the `infilled_viz_check.R`
-script.
+Run from the repo root, in this order (details, timings and checks in `HOW_TO_RUN_2026_UPDATE.md`,
+section 4):
+
+1. `1_prepare_climate_data.R`
+2. `2T_qc_temp_data.R`, then `2T_sdl_homogenized.R` (3T reads its `data/qc/sdlhomogTEMP_qc.rds`),
+   then `2P_qc_precip_data.R`
+3. Review the source data (`qc_2025_vs_neighbors.R`, `qc_2025_sources.R`) before infilling
+4. `3T_gapfill.R`, `3P_gapfill_precip.R`
+5. `4T_homogenize_sdlts.R` (Saddle temp only)
+6. `5_prep_v1_forEDI.R` (Saddle), `c1/5_prep_v1_forEDI_c1.R`, `d1/5_prep_v1_forEDI_d1.R`
+7. `6_build_full_record.R` → `data/publish/full_record/`, then `07_generate_provenance.R` → `provenance/`
+8. Optionally `infilled_viz_check.R` and the other `qc_*` review scripts
+
+**One manual download:** before step 1, put the NADP ETI gauge file `PRECIP_CO90_DAILY.csv` in
+`data/raw/NPN/` (<https://nadp.slh.wisc.edu/networks/nadp-precipitation-network/>: daily, then CO90).
+Script 1 fails without it. Everything else is fetched by the scripts.
+
+The notes below are from the 2023 run (Miles), kept for background.
 
 `1_prepare_climate_data.R` - The code in this file was almost entire
 unchanged from the example daily_met workflow included in
 ../v1_example_scripts/. It is necessary to run this to pull at the
-latest data from EDI and the various nearby stations. This year we added improvements to
-the data fetch function. No longer does the user need to manually download any data! All are 
-retrieved programmaticly. There is some additional code in here for visualizing data quality 
+latest data from EDI and the various nearby stations. All sources except the NADP ETI gauge
+file (see above) are retrieved programmatically. There is some additional code in here for visualizing data quality 
 from provided flags as well as data availability.
 
 `2T_qc_[temp/ppt]_data.R` - This code is used to read in, clean, and visually
