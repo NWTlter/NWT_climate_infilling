@@ -553,6 +553,8 @@ calculate_minmax <- function(chosen_dat, target_dat, target_site){
   names(pred_tmean)[grep("infil|pval|r2|equ|obs", names(pred_tmean))] <- paste("airtemp_avg", names(pred_tmean)[grep("infil|pval|r2|equ|obs", names(pred_tmean))], sep = "_")
   # merge
   pred_dat <- merge(pred_tmean, pred_dtr)
+  # a regression intercept can predict a negative DTR (e.g., c1 2014-07-30), which would give tmax < tmin; floor at 0
+  pred_dat$dtr_infill <- pmax(pred_dat$dtr_infill, 0)
   # calculate tmax and tmin to have it ready
   pred_dat$tmax_infill <- with(pred_dat, airtemp_avg_infill + (dtr_infill/2))
   pred_dat$tmin_infill <- with(pred_dat, airtemp_avg_infill - (dtr_infill/2))

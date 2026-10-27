@@ -206,10 +206,7 @@ getTabular <- function(edi_id, na_vals = c("", "NA", NA, NaN, ".", "NaN", " "), 
   v <- getPackageVersion(edi_id, site = site)
   packageId <- paste0("knb-lter-", site, ".", edi_id, ".", v)
   id <- getEntityId(edi_id, v, site = site, datanum = datanum)
-  archive_dir <- tempfile(pattern = "edi_archive_")
-  dir.create(archive_dir)
-
-  EDIutils::read_data_package_archive(packageId = packageId, path = archive_dir)
+  # read only the requested entity (downloading the whole package archive first was unused)
   raw <- EDIutils::read_data_entity(packageId = packageId, entityId = id)
   dat <- readr::read_csv(file = raw,
                          trim_ws = TRUE, na = na_vals, col_types = col_class,

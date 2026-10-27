@@ -113,6 +113,7 @@ kept exactly as posted on EDI.
 | `reject_neg_slope = T`: a source is rejected if either its Tmean or DTR fit has slope ≤ 0. The option defaults to `F`, so the 2022–2024 scripts behave as before. | All temp | Removes non-physical fits (mostly weak DTR fits). D1 temp: 6 published days changed; C1: none. |
 | C1/D1 infill start 2020 → 1980 | C1/D1 temp | 1980 is the first year with neighbor sources (2T drops GHCN before 1980). Now published from 1980 (see 1). |
 | **SDL pre-HMP series re-infilled (new `2T_sdl_homogenized.R`, 3T).** Reads CTW's homogenized 1986-12-06 – 2017-12-31 series from 314, keeps only measured values (raw + CTW adjustment, plus CTW's 60 values shifted −1 day in 1996–97) and blanks CTW's infill (~1,900–2,050 values per variable, mostly 1987–1991; 1988–89 have no logger data). Re-screens it with the 2025 all-logger QC pass (5 candidates; after review, CR21x Tmin 1992-08-30 and -31 removed, 4–8 °C below the SDL chart and D1). 3T infills it as one target (`sdl_homog`), with the CR21x neighbor order minus the raw SDL loggers. | SDL temp | Measured values unchanged except 2 days (1994-02-09, 2003-11-21) where `calculate_minmax()` rejects a measured mean inconsistent with the missing extreme, as for every target. Re-infilled days vs CTW: Tmax −0.05, Tmin +0.27, Tmean +0.09 °C (sd ~1). Annual means change mainly 1987–1991 (Tmean 0 to +0.2, Tmin +0.2 to +0.4). Trend 1987–2019: Tmax 0.22 → 0.24, Tmin 0.70 → 0.64, Tmean 0.47 → 0.45 °C/decade. |
+| `calculate_minmax()`: a predicted DTR below 0 is set to 0. A regression intercept can predict a negative DTR, which gave Tmax < Tmin. | All temp | One published day: C1 2014-07-30 was Tmax 5.12 / Tmin 5.93 (DTR −0.81 from Boulder 14 W, `y = 1.49x − 3.78`); now 5.52 / 5.52. Nothing else changed. |
 | SDL HMP infill start 2020 → 2018 | SDL temp | 2018–2019 re-infilled (they were CTW's). Annual means unchanged to 0.03 °C. |
 
 ### 2.5 Precipitation infilling (3P, `ppt_infill_functions.R`)
@@ -159,7 +160,10 @@ kept exactly as posted on EDI.
     shifted value, so the new `raw_Tmax`/`raw_Tmin` hold it too. The flag is still what
     explains the shift. Carried: C1 1,170 Tmax / 1,239 Tmin of 1,224 / 1,292 posted; D1
     1,459 / 1,448 of 1,483 / 1,486. The rest are days the new run infills, so the old flag
-    no longer applies. No `infill_QA_note` carries over, because all 66 are on old-infill days.
+    no longer applies. CTW's "Predicted infill chosen over known temperature-adjusted infill"
+    `infill_QA_note` (2011–2018, 25 C1 / 41 D1 days) is carried wherever both sides are still
+    predicted (flag_2 B; all 66 days). 2T reads it to find those days, so keeping it in the
+    posted table means next year's run doesn't need the old EDI revisions.
   - Checks for duplicate and missing dates, then writes `data/publish/full_record/`.
   - Reads the posted tables as text and writes them in EDI's layout (all values quoted
     except date and NaN), so posted rows are byte-identical to EDI. The first version read
@@ -178,7 +182,9 @@ None of these change values.
 - **`.gitignore`:** ignores `daily_met/Infilling_2025/data/` and `Rplots.pdf`, and keeps the
   `long-term-trends-data-copy/` CSVs.
 - **EDI fetch helpers** (`getPackageVersion`, `getEntityId`, `getTabular`): rewritten on
-  `EDIutils`, with a clear error if the requested entity does not exist.
+  `EDIutils`, with a clear error if the requested entity does not exist. `getTabular()` reads
+  only the requested entity (it had also downloaded the whole package archive on every call,
+  unused).
 - **`infilled_viz_check.R`:**
   - Repo-relative paths, and adds the D1 hv and C1 CR1000X aspirated sensors to the comparison plots.
   - Fixed missing `/` in the D1 output paths.
@@ -220,6 +226,7 @@ All write to `daily_met/Infilling_2025/data/plots/`; see `data/plots/README.md` 
   - Methods: re-infilled with the 2025 methods from 1980 (C1/D1), from 1986-12-06 (SDL
     temp, CTW's homogenized measured values re-infilled) and from 1987-06-01 (SDL precip).
   - SDL precip record now starts 1987-06-01.
+  - **C1/D1 temp flag definitions (185, 187):** see "Metadata corrections for C1/D1 temp" below.
 - **2026:** the `_ongoing` files still run into 2026; `full_record/` stops at 2025-12-31
   (`last_date` in `6_build_full_record.R`).
 - **2025 review points not yet decided:**
@@ -227,6 +234,40 @@ All write to `daily_met/Infilling_2025/data/plots/`; see `data/plots/README.md` 
   - Weak D1 DTR fits (median r² ~0.3).
   - D1 2025-12-13 to 16 15.2 mm accumulation while neighbors were dry.
   - SDL CR21x before mid-1992: see "To ponder for next year" below. Left as is for 2025.
+
+### Metadata corrections for C1/D1 temp (knb-lter-nwt.185, .187)
+
+Found in the 2026-10-26 code review. The flag letters in the data are kept as they are; the
+attribute definitions need to change to match them.
+
+1. **`flag_1`: the meaning of B/C vs D/E depends on the date.** The methods text calls the
+   same-season (moving-window) regression method 1 and the multi-year regression method 2.
+   TK's rows before 1980 follow that (B rows: regressions of 14–28 observations; D: 33–403).
+   Since the 2022 workflow, step 5 has coded multi-year as B/C and moving-window as D/E, and
+   the 2025 republish applies that to every row from 1980 (B: 14–469 observations; D: 7–28).
+   Saddle temp (314) and all three precip packages use the method 1 = same-season convention
+   throughout, so need no change.
+2. **`flag_1` and `flag_3`: the p-value cutoff is 0.05, not 0.5.** The code uses 0.05. No C/E
+   `flag_1` rows exist in either file, so this doesn't change how any row reads.
+3. **`flag_2`: add `B*`.** Set when a known Tmax or Tmin, combined with the predicted DTR,
+   was inconsistent with the predicted mean (Tmax ≤ Tmin, or the mean outside Tmin–Tmax).
+   Both are then taken from the prediction (mean ± DTR/2). C1 5 rows, D1 28 rows (1980–2025).
+   D1's posted 2019–2024 rows already had 3.
+
+Proposed definitions (same text for 185 and 187):
+
+| Attribute | Code | Definition |
+|---|---|---|
+| flag_1 | A | no infilling |
+| flag_1 | B | before 1980: infilled using method 1 (same-season regression), p < 0.05; from 1980: infilled using method 2 (multi-year regression), p < 0.05 |
+| flag_1 | C | before 1980: method 1, p > 0.05; from 1980: method 2, p > 0.05 |
+| flag_1 | D | before 1980: infilled using method 2 (multi-year regression), p < 0.05; from 1980: infilled using method 1 (same-season regression), p < 0.05 |
+| flag_1 | E | before 1980: method 2, p > 0.05; from 1980: method 1, p > 0.05 |
+| flag_2 | B* | Tmax and Tmin both predicted (predicted mean ± predicted DTR/2) because the known Tmax or Tmin adjusted by the predicted DTR was inconsistent with the predicted mean |
+| flag_3 | B / C | DTR regression p < 0.05 / p > 0.05 |
+
+Also add a sentence to the methods: "Flag_1 codes B/C and D/E refer to different infill methods
+before and after 1980-01-01; see the flag_1 definitions."
 
 ### To ponder for next year: Saddle CR21x adjustment (deferred 2026-10-26)
 
