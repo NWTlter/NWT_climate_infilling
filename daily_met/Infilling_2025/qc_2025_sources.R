@@ -114,9 +114,15 @@ usual_hist <- dall |> filter(yr < yr_qc) |>
 
 dd <- dall |> filter(yr == yr_qc) |>
   left_join(usual_hist, by = c("local_site", "metric", "ref", "month")) |>
-  group_by(local_site, metric, ref) |> arrange(date) |>
-  mutate(has_hist = !is.na(usual), usual = ifelse(has_hist, usual, median(diff)),
-         run15 = as.numeric(stats::filter(diff, rep(1 / 15, 15), sides = 2))) |> ungroup()
+  group_by(local_site, metric, ref) |>
+  mutate(has_hist = !is.na(usual), usual = ifelse(has_hist, usual, median(diff))) |>
+  # 15-day running mean over calendar days, not rows: fill in the missing days, average the days
+  # present in each window, and need >= 10 of the 15
+  complete(date = seq(as.Date(paste0(yr_qc, "-01-01")), as.Date(paste0(yr_qc, "-12-31")), by = "day")) |>
+  arrange(date) |>
+  mutate(n15 = as.numeric(stats::filter(!is.na(diff), rep(1, 15), sides = 2)),
+         run15 = ifelse(n15 >= 10, as.numeric(stats::filter(coalesce(diff, 0), rep(1, 15), sides = 2)) / n15, NA)) |>
+  ungroup() |> filter(!is.na(diff)) |> select(-n15)
 
 metric_lab <- c(airtemp_max = "daily max", airtemp_min = "daily min")
 for (g in c("C1", "D1", "Saddle", "Regional")) for (m in c("airtemp_max", "airtemp_min")) {
@@ -162,8 +168,15 @@ p <- ggplot(hm, aes(month, local_site, fill = pmax(pmin(departure, 5), -5))) +
 ggsave(paste0(out_dir, "temp_monthly_departure_heatmap.png"), p, width = 15, height = 11, dpi = 120, bg = "white")
 
 # ---------------- PRECIP ----------------
-ppt <- readRDS(paste0(datpath, "infill/allPPTdats_wNWTqdays.rds")) |> ungroup() |> as_tibble() |>
-  select(local_site, date, measurement) |> filter(!is.na(measurement)) |> in_year()
+# stacked from the step-2 outputs as 3P stacks them ("PREP DATA FOR REGRESSIONS"): chart multi-day
+# accumulations (qdays > 1) dropped, NPN the only logger gauge
+ppt_cols <- function(d) d |> select(local_site, date, metric, measurement)
+ppt <- bind_rows(
+  rd("nwtchartPPT_qc.rds") |> filter(is.na(qdays) | qdays <= 1) |> ppt_cols(),
+  rd("c1loggerPPT_qc.rds") |> filter(station_name == "NPN") |> ppt_cols(),
+  lapply(c("ghcndPPT_qc.rds", "snotelPPT_qc.rds", "amerifluxPPT_qc.rds"), function(f) ppt_cols(rd(f)))) |>
+  filter(grepl("ppt", metric), !is.na(measurement)) |> in_year() |>
+  transmute(local_site = gsub("-", "_", local_site), date, measurement)
 psites <- unique(ppt$local_site)
 # regional leave-one-out mean on days where both are present, then cumulative ratio
 tot <- ppt |> group_by(date) |> summarise(s = sum(measurement), n = n(), .groups = "drop")
