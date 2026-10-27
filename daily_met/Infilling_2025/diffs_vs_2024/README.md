@@ -33,4 +33,4 @@ New in 2025, with no 2024 counterpart (nothing to diff):
   `qc_review_suspect_periods.R`, `daily_met/infill_qc_check/qc_infilled_vs_raw.R`
 - Data: `long-term-trends-data-copy/` (QC files copied from the long-term-trends repo)
 
-`readme.md` is unchanged from 2024.
+`readme.md` now gives the 2025 run order and the NADP manual download; the 2023 notes below it are kept.

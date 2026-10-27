@@ -176,7 +176,7 @@ index 9398531..46d1418 100644
    if(!is.na(datasource)){
      colnames(dat_long)[
 diff --git a/daily_met/R/temp_infill_functions.R b/daily_met/R/temp_infill_functions.R
-index d38ddfd..03a28a3 100644
+index d38ddfd..6140273 100644
 --- a/daily_met/R/temp_infill_functions.R
 +++ b/daily_met/R/temp_infill_functions.R
 @@ -21,14 +21,20 @@ mean_and_diurnalT <- function(dat){
@@ -218,7 +218,7 @@ index d38ddfd..03a28a3 100644
        # 
        mod <- lm(formula = paste0(target_site, "_airtemp_avg ~ ", site, "_airtemp_avg"), data = wide_df)
 +      # smallest slope across the metrics that will be infilled from this site (for reject_neg_slope)
-+      min_slope <- min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = wide_df))[[2]]))
++      min_slope <- if(reject_neg_slope) min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = wide_df))[[2]])) else NA
        
        r2_df <- rbind(r2_df, 
                       data.frame(cbind(site = site,
@@ -255,7 +255,7 @@ index d38ddfd..03a28a3 100644
        # run lm model and store results
        mod <- lm(formula = paste0(target_site,"_airtemp_avg ~ ", site, "_airtemp_avg"), data = subset(wide_df, allthere))
 +      # smallest slope across the metrics that will be infilled from this site (for reject_neg_slope)
-+      min_slope <- min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = subset(wide_df, allthere)))[[2]]))
++      min_slope <- if(reject_neg_slope) min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = subset(wide_df, allthere)))[[2]])) else NA
        r2_df <- rbind(r2_df, 
                       data.frame(cbind(site = site,
                                        r2 = summary(mod)$r.squared,

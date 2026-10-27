@@ -378,3 +378,4 @@ her infill. CTW's CR21x adjustment is 0, and that is kept for 2025. Things to lo
 | `08b3b46` | SDL 1986–2017 temp infilled per logger, then combined (CTW's order) |
 | `c82db24` | Temp `source_station` NaN on measured days for the whole record (step 6); `source_station` codes missing from each EML listed |
 | `368d6e3` | Published values rounded to 3 decimals (step 6); p-values, counts and equations unchanged |
+| `987feae`–`fcaa589` | PR #20 review fixes, no change to published values: `2T_sdl_homogenized.R` creates `plots/qc_review/` (fresh runs failed); `qc_2025_sources.R` builds precip from the step-2 outputs (ran only after 3P) and takes the 15-day mean over calendar days; `qc_compare_old_infill.R` compares source names on a normalized key (source changes were overcounted, e.g. D1 2019–24 precip 123 → 28 days); slope diagnostics fitted only when `reject_neg_slope` is on; `readme.md` run order and NADP download |
