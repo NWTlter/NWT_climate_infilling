@@ -374,3 +374,7 @@ her infill. CTW's CR21x adjustment is 0, and that is kept for 2025. Things to lo
 | `0aee255` | Negative predicted DTR set to 0 (C1 2014-07-30); `getTabular()` reads only the requested entity; C1/D1 metadata corrections |
 | `f5e1d65` | CHANGES commit list and review-script table |
 | `b588167` | `diffs_vs_2024/` (each script vs 2024); metadata notes per dataset |
+| `0735b30` | C1/D1 temp step 5 `flag_1` method letters fixed (B/C same-season, D/E multi-year) |
+| `08b3b46` | SDL 1986–2017 temp infilled per logger, then combined (CTW's order) |
+| `c82db24` | Temp `source_station` NaN on measured days for the whole record (step 6); `source_station` codes missing from each EML listed |
+| `368d6e3` | Published values rounded to 3 decimals (step 6); p-values, counts and equations unchanged |
