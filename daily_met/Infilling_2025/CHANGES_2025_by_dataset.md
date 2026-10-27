@@ -50,12 +50,12 @@ Applies to every dataset:
 - **Main change:** the Saddle HMP infill now draws on other NWT loggers in the multi-year regressions. A bug had excluded them all. For example, HMP 3 went from 56 to 670 of 671 infilled days using on-site sensors.
 - **Whole record re-infilled from 1986-12-06:**
   - CTW's homogenized pre-HMP series (CR21x, CR23x, CR1000; 1986–2017) is kept for every measured day, including CTW's adjustments and manual fixes.
-  - Only CTW's infilled days are re-infilled with the 2025 methods, mostly 1987–1991. 1988–89 had no logger data.
+  - Only CTW's infilled days are re-infilled with the 2025 methods, mostly 1987–1991. 1988–89 had no logger data. As in CTW's version, each logger (CR21x, CR23x, CR1000) is infilled separately and then adjusted.
   - The HMPs are infilled from 2018, when they were installed.
 - **2025 QC on the old series:** two CR21x minimums (1992-08-30 and -31) removed after review.
-- **Effect:** annual means change mainly in 1987–1991 (Tmean up to +0.2 °C, Tmin up to +0.4 °C). The 1987–2019 Tmean trend is 0.45 °C/decade (was 0.47).
+- **Effect:** small. Re-infilled days differ from CTW's by +0.01 °C on average (sd 0.2–0.3). Annual means are within 0.04 °C, and the 1987–2019 trends are unchanged (Tmean 0.47 °C/decade).
 - **Same source fixes as C1/D1:** GHCN units, SNOTEL/AmeriFlux QC, the D1 HMP 2018–19 removal, negative-slope rejection, and the negative-DTR floor (no Saddle day changed).
-- **Metadata to update:** methods text for the re-infill from 1986-12-06 (CTW's measured homogenized values kept, her infill redone; two 1992 CR21x minimums removed, noted in `airtemp_min_qcflag`). Flag definitions are already correct (B/C = same-season, D/E = multi-year, as in the data).
+- **Metadata to update:** methods text for the re-infill from 1986-12-06 (CTW's measured homogenized values kept, her infill redone per logger as before; two 1992 CR21x minimums removed, noted in `airtemp_min_qcflag`). Flag definitions are already correct (B/C = same-season, D/E = multi-year, as in the data).
 
 ## C1 precipitation (knb-lter-nwt.184, `c1_infilled_precip_daily.tk.data.csv`)
 

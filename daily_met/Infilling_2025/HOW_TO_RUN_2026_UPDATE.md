@@ -91,7 +91,9 @@ This works without pinning the reads to the old revisions:
   replaced by the 2025 full-record files, with all other inputs the same. Results:
   - **Precip:** identical.
   - **Saddle temp:** two measured days the 2025 infill had already replaced (1994-02-09
-    max, 2003-11-21 min) are NA'd up front instead. They are infilled either way.
+    max, 2003-11-21 min) were NA'd up front instead. Since the switch to the per-logger fill
+    (2026-10-27) the 2025 infill keeps both measured values, so this should no longer
+    happen (not retested).
   - **C1/D1 temp:** 46 of ~100,000 measured chart values change. 30 are measured values the 2025
     infill had already replaced (flag `B*`), so they are infilled either way. The other 16
     are raw values that the rank-based spatial QC in 2T now removes, because the neighbouring
@@ -115,7 +117,7 @@ which currently always reads the newest revision. EDIutils reads old revisions f
 |---|---|---|
 | `6_build_full_record.R` | 22 | `last_date <- as.Date("2026-12-31")` |
 | `6_build_full_record.R` | 25–30 | `new_start` / `keep_posted`: see 3.4 |
-| `3T_gapfill.R` | 296–297 | output names `sdlhmp_infilled_2025.rds`, `sdlhomog_infilled_2025.rds` → `_2026` |
+| `3T_gapfill.R` | 315–316 | output names `sdlhmp_infilled_2025.rds`, `sdlhomog_infilled_2025.rds` → `_2026` |
 | `4T_homogenize_sdlts.R` | 28, 31 | match those names: `sdlhmp_infilled_2026`, `sdlhomog_infilled_2026` |
 
 **Leave these alone:**

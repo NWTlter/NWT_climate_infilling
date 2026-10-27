@@ -1,7 +1,7 @@
 # 2025 scripts vs 2024
 
 Unified diffs of each `Infilling_2025` script against its `Infilling_2024` counterpart
-(`-` = 2024, `+` = 2025), made 2026-10-26 (C1/D1 step 5 updated after the flag_1 fix). The reasons for each change
+(`-` = 2024, `+` = 2025), made 2026-10-26 (C1/D1 step 5 updated after the flag_1 fix, 3T after the per-logger Saddle fill). The reasons for each change
 are in `../CHANGES_2025.md`.
 
 Regenerate from `daily_met/`:
@@ -16,7 +16,7 @@ git diff master -- R/
 | `1_prepare_climate_data.diff` | `1_prepare_climate_data.R` | +14 / −5 |
 | `2T_qc_temp_data.diff` | `2T_qc_temp_data.R` | +55 / −23 |
 | `2P_qc_precip_data.diff` | `2P_qc_precip_data.R` | +35 / −7 |
-| `3T_gapfill.diff` | `3T_gapfill.R` | +55 / −27 |
+| `3T_gapfill.diff` | `3T_gapfill.R` | +73 / −27 |
 | `3P_gapfill_precip.diff` | `3P_gapfill_precip.R` | +44 / −31 |
 | `4T_homogenize_sdlts.diff` | `4T_homogenize_sdlts.R` | +61 / −22 |
 | `5_prep_v1_forEDI.diff` | `5_prep_v1_forEDI.R` (Saddle) | +17 / −11 |

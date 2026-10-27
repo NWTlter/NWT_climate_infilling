@@ -368,8 +368,8 @@ glimpse(edi_dat) #meh 114 columns
 
 
 # -- 2025: PRE-HMP LOGGERS (1986-2017) -----
-# 3T re-infilled CTW's homogenized cr21x/cr23x/cr1000 series (already adjusted to the HMPs), so its
-# values are the homogenized values. CTW's adjustments, qc flags and raw values are carried over;
+# 3T re-infilled CTW's cr21x/cr23x/cr1000 series per logger and added CTW's adjustments back on
+# (adjusted to the HMPs), so its values are the homogenized values. CTW's adjustments, qc flags and raw values are carried over;
 # gapfilled = homogenized - adjustment, as in CTW's posted series.
 sdlhomog_pred$airtemp_avg_method[grepl("m", sdlhomog_pred$method)] <- "predicted"
 sdlhomog_pred <- infill_flags(sdlhomog_pred)

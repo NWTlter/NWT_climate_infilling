@@ -112,7 +112,7 @@ kept exactly as posted on EDI.
 | `mean_and_diurnalT()` builds Tmean/DTR per site. Before, if any site in a dataset reported a mean, sites that only report max/min (e.g. 21x loggers) got no mean and could not be used. | Mostly pre-2001 re-infill | 21x loggers usable as sources. Sites that do report a mean keep their NAs (they can be QC removals). |
 | `reject_neg_slope = T`: a source is rejected if either its Tmean or DTR fit has slope ≤ 0. The option defaults to `F`, so the 2022–2024 scripts behave as before. | All temp | Removes non-physical fits (mostly weak DTR fits). D1 temp: 6 published days changed; C1: none. |
 | C1/D1 infill start 2020 → 1980 | C1/D1 temp | 1980 is the first year with neighbor sources (2T drops GHCN before 1980). Now published from 1980 (see 1). |
-| **SDL pre-HMP series re-infilled (new `2T_sdl_homogenized.R`, 3T).** Reads CTW's homogenized 1986-12-06 – 2017-12-31 series from 314, keeps only measured values (raw + CTW adjustment, plus CTW's 60 values shifted −1 day in 1996–97) and blanks CTW's infill (~1,900–2,050 values per variable, mostly 1987–1991; 1988–89 have no logger data). Re-screens it with the 2025 all-logger QC pass (5 candidates; after review, CR21x Tmin 1992-08-30 and -31 removed, 4–8 °C below the SDL chart and D1). 3T infills it as one target (`sdl_homog`), with the CR21x neighbor order minus the raw SDL loggers. | SDL temp | Measured values unchanged except 2 days (1994-02-09, 2003-11-21) where `calculate_minmax()` rejects a measured mean inconsistent with the missing extreme, as for every target. Re-infilled days vs CTW: Tmax −0.05, Tmin +0.27, Tmean +0.09 °C (sd ~1). Annual means change mainly 1987–1991 (Tmean 0 to +0.2, Tmin +0.2 to +0.4). Trend 1987–2019: Tmax 0.22 → 0.24, Tmin 0.70 → 0.64, Tmean 0.47 → 0.45 °C/decade. |
+| **SDL pre-HMP series re-infilled (new `2T_sdl_homogenized.R`, 3T).** Reads CTW's homogenized 1986-12-06 – 2017-12-31 series from 314, keeps only measured values (raw + CTW adjustment, plus CTW's 60 values shifted −1 day in 1996–97) and blanks CTW's infill (~1,900–2,050 values per variable, mostly 1987–1991; 1988–89 have no logger data). Re-screens it with the 2025 all-logger QC pass (5 candidates; after review, CR21x Tmin 1992-08-30 and -31 removed, 4–8 °C below the SDL chart and D1). 3T infills each logger separately (CR21X, CR23X, CR1000, by CTW's logger dates) on its own scale (CTW's adjustment removed), with the CR21x neighbor order minus the raw SDL loggers, then adds the adjustment back: CTW's v1 order (fill, then combine). Filling the combined series instead (tried first) fit one DTR across all loggers (8.96 vs 9.34 for the CR21x alone), so 1987–1991 infilled Tmin came out +0.3 °C warm and the 1987–2019 Tmin trend dropped 0.70 → 0.64 °C/decade. | SDL temp | Measured values unchanged. Re-infilled days vs CTW: mean +0.01 °C for Tmax, Tmin and Tmean (sd 0.24, 0.34, 0.19). Annual means within 0.04 °C of CTW. Trend 1987–2019 unchanged (Tmax 0.22, Tmin 0.70, Tmean 0.47 °C/decade). |
 | C1/D1 step 5 `flag_1`: moving window now B/C and multi-year D/E (method 1 / method 2 in the 185/187 metadata, as TK's rows and SDL temp use). They had been swapped since the 2022 workflow. | C1/D1 temp | `flag_1` only, on 481 C1 and 1,815 D1 rows (1980–2025). Values unchanged. |
 | `calculate_minmax()`: a predicted DTR below 0 is set to 0. A regression intercept can predict a negative DTR, which gave Tmax < Tmin. | All temp | One published day: C1 2014-07-30 was Tmax 5.12 / Tmin 5.93 (DTR −0.81 from Boulder 14 W, `y = 1.49x − 3.78`); now 5.52 / 5.52. Nothing else changed. |
 | SDL HMP infill start 2020 → 2018 | SDL temp | 2018–2019 re-infilled (they were CTW's). Annual means unchanged to 0.03 °C. |
@@ -290,12 +290,14 @@ her infill. CTW's CR21x adjustment is 0, and that is kept for 2025. Things to lo
 - **It shows in the daily range.** Measured DTR: CR21x to Jun 1992 10.9 °C (451 days),
   CR21x Jul 1992–2000 8.7, CR23x 8.4, CR1000 8.2 (similar gap in Jan and Jul). In
   1987–1991 almost all infilled days are whole days (1,569; only 10 min-only), with max/min
-  = predicted mean ± DTR/2. The 2025 DTR prediction (8.96, fit to 1986–2017) is narrower
-  than CTW's (9.34, fit to the CR21x alone), which is why the 2025 infilled Tmin is +0.3 °C
-  and Tmax −0.08 °C vs CTW there.
-- **The 2025 re-infill does not share the offset.** Its regressions are fit mostly to
-  post-1992 data, so in 1987–1991 the measured days (warm Tmax) and re-infilled days sit at
-  different levels relative to the chart. CTW's infill had the same issue.
+  = predicted mean ± DTR/2. The 2025 re-infill is fit per logger (as CTW's was), so its
+  infilled DTR there is 9.34 °C, the same as CTW's; a fit to the combined 1986–2017 series
+  gave 8.96 and was dropped for that reason (2.4).
+- **The re-infill does not share the early Tmax offset.** The CR21x regressions are fit
+  to the whole 1986–2000 CR21x period, most of it after mid-1992, so in 1987–1991 the
+  infilled Tmax runs ~1.8–1.9 °C cooler than measured Tmax relative to the SDL chart and D1.
+  CTW's infill had the same issue. Tmin infilled and measured days agree (gap ~0 vs the
+  SDL chart).
 - **Options:**
   1. Leave as is (2025 choice).
   2. Use CTW's NR1-based CR21x offset (+0.6 Tmax etc.). Simple, but it covers 1998–2000
@@ -306,7 +308,8 @@ her infill. CTW's CR21x adjustment is 0, and that is kept for 2025. Things to lo
      logger package metadata, field notes).
   4. Treat early CR21x days that fail a chart/D1 comparison as suspect and infill them.
 - **Where it would go:** `2T_sdl_homogenized.R` builds the series from 314 and could
-  apply a revised CR21x adjustment before the QC pass. 3T/4T would then run unchanged,
+  apply a revised CR21x adjustment before the QC pass, or split the CR21x into two logger
+  periods at mid-1992 (3T fills per `ctw_logger`). 3T/4T would then run unchanged,
   and 4T writes `airtemp_*_adjustment` from that file.
 - **Review files:** `data/plots/qc_review/sdl_temp_rebuild_vs_posted.png` (annual means,
   posted vs 2025).

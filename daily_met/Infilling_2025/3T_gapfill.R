@@ -250,23 +250,42 @@ ggplot(sdl1000_hmp_3_predicted) +
 
 # -- INFILL SDL HOMOGENIZED LOGGER SERIES (1986-2017) -----
 # CTW's homogenized cr21x/cr23x/cr1000 series with CTW's infill removed, re-screened with
-# the 2025 QC (2T_sdl_homogenized.R). Infilled as one series so the regressions span the logger changes.
-sdl_homog_ready <- readRDS(rdsfiles_qc[grep("sdlhomogTEMP_qc", rdsfiles_qc)]) %>%
-  subset(select = c(date, yr, mon, doy, logger, metric, measurement, local_site))
-# only this target uses it: not in allsites, so no other site takes it as a source
-alldats_sdlhomog <- rbind(alldats, subset(mean_and_diurnalT(sdl_homog_ready), metric %in% c("airtemp_avg", "DTR"))[names(alldats)])
-sdl_homog_missing <- idInfillDates(alldats_sdlhomog, "sdl_homog", 1986)
+# the 2025 QC (2T_sdl_homogenized.R). Infilled per logger, then combined (CTW's v1 order): each
+# logger's measured values with CTW's constant adjustment taken off, so each logger's regressions
+# use only its own days and keep its own DTR; the adjustment is added back after infilling.
+# (Filling the combined series instead pulled CR21x infilled Tmin ~0.3 C warm in 1987-1992;
+# see CHANGES_2025.md.)
+sdl_homog_ready <- readRDS(rdsfiles_qc[grep("sdlhomogTEMP_qc", rdsfiles_qc)])
+sdl_homog_adj <- distinct(sdl_homog_ready[c("ctw_logger", "metric", "ctw_adjustment")])
 # same neighbors as the cr21x, without the raw saddle loggers (the same instruments, unadjusted)
 sdl_homog_order <- with(allsites, paired_site[local_site == "sdl_cr21x" & final_rank != 1 & !grepl("^sdl_cr", paired_site)])
-# moving window infill
-sdl_homog_season <- tk_temp_movingfill(alldats_sdlhomog, target_site = "sdl_homog", missing_dates = sdl_homog_missing, site_order = sdl_homog_order, reject_neg_slope = T)
-# historic infill
-sdl_homog_historic <- tk_temp_historicfill(alldats_sdlhomog, "sdl_homog", sdl_homog_missing, sdl_homog_order, reject_neg_slope = T)
-# model selection
-select_sdl_homog <- select_model(sdl_homog_historic, sdl_homog_season)
-# calculate regression derived tmin and tmax
-sdl_homog_predicted <- calculate_minmax(select_sdl_homog, sdl_homog_ready, "sdl_homog") %>%
+
+sdl_homog_predicted <- lapply(c("CR21X", "CR23X", "CR1000"), function(lg) {
+  # only this target uses it: not in allsites, so no other site takes it as a source
+  site <- paste0("sdl_homog_", tolower(lg))
+  target <- subset(sdl_homog_ready, ctw_logger == lg) %>%
+    mutate(measurement = measurement - ctw_adjustment, local_site = site) %>%
+    subset(select = c(date, yr, mon, doy, logger, metric, measurement, local_site))
+  dats <- rbind(alldats, subset(mean_and_diurnalT(target), metric %in% c("airtemp_avg", "DTR"))[names(alldats)])
+  missing <- idInfillDates(dats, site, 1986)
+  # moving window infill
+  season <- tk_temp_movingfill(dats, target_site = site, missing_dates = missing, site_order = sdl_homog_order, reject_neg_slope = T)
+  # historic infill
+  historic <- tk_temp_historicfill(dats, site, missing, sdl_homog_order, reject_neg_slope = T)
+  # model selection, then regression derived tmin and tmax
+  pred <- calculate_minmax(select_model(historic, season), target, site)
+  # combine: add this logger's CTW adjustment back on (regression stats and equations stay on the logger's own scale).
+  # rounded so measured days get back CTW's homogenized value exactly (e.g. 0.0912, not 0.0911999999999999)
+  a <- with(subset(sdl_homog_adj, ctw_logger == lg), setNames(ctw_adjustment, metric))
+  for(v in names(a)) pred[[v]] <- round(pred[[v]] + a[[v]], 10)
+  for(v in names(a)) pred[[paste0("raw_", v)]] <- round(pred[[paste0("raw_", v)]] + a[[v]], 10)
+  pred
+}) %>%
+  bind_rows() %>%
+  mutate(local_site = "sdl_homog") %>%
+  arrange(date) %>%
   subset(select = -c(flagmax, flagmin, flag_airtemp_avg, airtemp_avg_infill))
+stopifnot(!anyDuplicated(sdl_homog_predicted$date))
 
 # how does it look?
 ggplot(sdl_homog_predicted) +
