@@ -1,0 +1,121 @@
+--- Infilling_2024/4T_homogenize_sdlts.R
++++ Infilling_2025/4T_homogenize_sdlts.R
+@@ -19,14 +19,17 @@
+ options(stringsAsFactors = F)
+ 
+ # set path to prepared data
+-datpath <- "~/OneDrive - UCB-O365/NWT_Infilling_2024/data/"
++datpath <- "daily_met/Infilling_2025/data/"
+ # list all rds files in qc'd data folder (full path directory)
+ rdsfiles <- list.files(paste0(datpath), pattern = "rds", full.names = T, recursive = TRUE)
+ 
+ # read in infilled sdl temp data
+ # sdlchart_pred <- readRDS(rdsfiles[grepl("sdl_chart_infill", rdsfiles)])
+-sdlhmp_pred <- readRDS(rdsfiles[grepl("sdlhmp_infilled_2024", rdsfiles)])
++sdlhmp_pred <- readRDS(rdsfiles[grepl("sdlhmp_infilled_2025", rdsfiles)])
+ nwtlog_qc <- readRDS(rdsfiles[grepl("nwtloggerTEMP_ready", rdsfiles)])
++# 2025: pre-HMP saddle loggers (1986-2017), CTW's homogenized series re-infilled in 3T
++sdlhomog_pred <- readRDS(rdsfiles[grepl("sdlhomog_infilled_2025", rdsfiles)])
++sdlhomog_qc <- readRDS(rdsfiles[grepl("sdlhomogTEMP_qc", rdsfiles)])
+ 
+ # -- AVERAGE HMP PERIOD ----
+ sdlhmps <- subset(sdlhmp_pred, grepl("hmp", local_site), 
+@@ -164,28 +167,33 @@
+ sdlhmp_pred$airtemp_avg_method[grepl("m", sdlhmp_pred$method)] <- "predicted"
+ unique(sdlhmp_pred$airtemp_avg_method[is.na(sdlhmp_pred$method)]) # all 'raw', good
+ 
+-sdlhmp_pred$flag_1 <- NA
+-sdlhmp_pred$flag_1[is.na(sdlhmp_pred$method)] <- "A"
+-# flagging based on tmean pval
+-sdlhmp_pred$flag_1[grepl("multi", sdlhmp_pred$method) & sdlhmp_pred$airtemp_avg_pval <= 0.05] <- "D"
+-sdlhmp_pred$flag_1[grepl("multi", sdlhmp_pred$method) & sdlhmp_pred$airtemp_avg_pval > 0.05] <- "E"
+-sdlhmp_pred$flag_1[grepl("moving", sdlhmp_pred$method) & sdlhmp_pred$airtemp_avg_pval <= 0.05] <- "B"
+-sdlhmp_pred$flag_1[grepl("moving", sdlhmp_pred$method) & sdlhmp_pred$airtemp_avg_pval > 0.05] <- "C"
+-
+-# flagging for tmax/tmin derivation
+-sdlhmp_pred$flag_2 <- NA
+-sdlhmp_pred$flag_2[is.na(sdlhmp_pred$method)] <- "A"
+-sdlhmp_pred$flag_2[sdlhmp_pred$airtemp_max_method == "predicted" & sdlhmp_pred$airtemp_min_method == "predicted"] <- "B"
+-# if raw adjustment failed, assign B*
+-sdlhmp_pred$flag_2[grepl("failed", sdlhmp_pred$airtemp_max_method)] <- "B*"
+-sdlhmp_pred$flag_2[grepl("adjusted$", sdlhmp_pred$airtemp_max_method) & sdlhmp_pred$airtemp_min_method == "raw"] <- "C"
+-sdlhmp_pred$flag_2[sdlhmp_pred$airtemp_max_method == "raw" & grepl("dtr adjusted$", sdlhmp_pred$airtemp_min_method)] <- "D"
+-
+-# flagging for dtr pval
+-sdlhmp_pred$flag_3 <- NA
+-sdlhmp_pred$flag_3[is.na(sdlhmp_pred$method)] <- "A"
+-sdlhmp_pred$flag_3[sdlhmp_pred$dtr_pval <= 0.05] <- "B"
+-sdlhmp_pred$flag_3[sdlhmp_pred$dtr_pval > 0.05] <- "C"
++# (2025: made a function so the pre-HMP series gets the same flags)
++infill_flags <- function(pred){
++  pred$flag_1 <- NA
++  pred$flag_1[is.na(pred$method)] <- "A"
++  # flagging based on tmean pval
++  pred$flag_1[grepl("multi", pred$method) & pred$airtemp_avg_pval <= 0.05] <- "D"
++  pred$flag_1[grepl("multi", pred$method) & pred$airtemp_avg_pval > 0.05] <- "E"
++  pred$flag_1[grepl("moving", pred$method) & pred$airtemp_avg_pval <= 0.05] <- "B"
++  pred$flag_1[grepl("moving", pred$method) & pred$airtemp_avg_pval > 0.05] <- "C"
++
++  # flagging for tmax/tmin derivation
++  pred$flag_2 <- NA
++  pred$flag_2[is.na(pred$method)] <- "A"
++  pred$flag_2[pred$airtemp_max_method == "predicted" & pred$airtemp_min_method == "predicted"] <- "B"
++  # if raw adjustment failed, assign B*
++  pred$flag_2[grepl("failed", pred$airtemp_max_method)] <- "B*"
++  pred$flag_2[grepl("adjusted$", pred$airtemp_max_method) & pred$airtemp_min_method == "raw"] <- "C"
++  pred$flag_2[pred$airtemp_max_method == "raw" & grepl("dtr adjusted$", pred$airtemp_min_method)] <- "D"
++
++  # flagging for dtr pval
++  pred$flag_3 <- NA
++  pred$flag_3[is.na(pred$method)] <- "A"
++  pred$flag_3[pred$dtr_pval <= 0.05] <- "B"
++  pred$flag_3[pred$dtr_pval > 0.05] <- "C"
++  return(pred)
++}
++sdlhmp_pred <- infill_flags(sdlhmp_pred)
+ 
+ # be sure for prediction only keep hmps for 2018 and cr23x for overlap dates btwn 21 and 23
+ # preds_out_crs <- subset(sdlhmp_pred, !grepl("hmp", local_site)) %>%
+@@ -358,6 +366,42 @@
+   data.frame()
+ glimpse(edi_dat) #meh 114 columns
+ 
++
++# -- 2025: PRE-HMP LOGGERS (1986-2017) -----
++# 3T re-infilled CTW's homogenized cr21x/cr23x/cr1000 series (already adjusted to the HMPs), so its
++# values are the homogenized values. CTW's adjustments, qc flags and raw values are carried over;
++# gapfilled = homogenized - adjustment, as in CTW's posted series.
++sdlhomog_pred$airtemp_avg_method[grepl("m", sdlhomog_pred$method)] <- "predicted"
++sdlhomog_pred <- infill_flags(sdlhomog_pred)
++
++sdlhomog_ctw <- sdlhomog_qc %>%
++  # 2025 QC removals, else CTW's qc flag
++  mutate(qcflag = ifelse(is.na(qcflag), ctw_qcflag, qcflag),
++         metric = gsub("airtemp_", "", metric)) %>%
++  dplyr::select(date, ctw_logger, metric, ctw_adjustment, qcflag, ctw_raw, ctw_raw_flag) %>%
++  pivot_wider(names_from = metric, values_from = c(ctw_adjustment, qcflag, ctw_raw, ctw_raw_flag))
++
++edi_dat_crs <- left_join(sdlhomog_pred, sdlhomog_ctw, by = "date") %>%
++  transmute(LTER_site = "NWT", local_site = "sdl", logger = ctw_logger, date, yr, mon, doy,
++            airtemp_max_homogenized = airtemp_max, airtemp_avg_homogenized = airtemp_avg,
++            airtemp_min_homogenized = airtemp_min, dtr_homogenized = airtemp_max - airtemp_min,
++            airtemp_max_adjustment = ctw_adjustment_max, airtemp_avg_adjustment = ctw_adjustment_avg,
++            airtemp_min_adjustment = ctw_adjustment_min,
++            airtemp_max_gapfilled = airtemp_max - ctw_adjustment_max, airtemp_min_gapfilled = airtemp_min - ctw_adjustment_min,
++            airtemp_avg_gapfilled = airtemp_avg - ctw_adjustment_avg,
++            dtr_gapfilled = airtemp_max_gapfilled - airtemp_min_gapfilled,
++            flag_1, flag_2, flag_3, source_station = source.station,
++            airtemp_avg_pval, airtemp_avg_r2, num_obs_in_airtemp_avg_regression = airtemp_avg_n.obs, airtemp_avg_equation,
++            dtr_pval, dtr_r2, num_obs_in_dtr_regression = dtr_n.obs, dtr_equation,
++            airtemp_max_qcflag = qcflag_max, raw_airtemp_max = ctw_raw_max, raw_airtemp_max_flag = ctw_raw_flag_max,
++            airtemp_min_qcflag = qcflag_min, raw_airtemp_min = ctw_raw_min, raw_airtemp_min_flag = ctw_raw_flag_min,
++            airtemp_avg_qcflag = qcflag_avg, raw_airtemp_avg = ctw_raw_avg, raw_airtemp_avg_flag = ctw_raw_flag_avg)
++
++# the two series meet at 2018-01-01 (first HMP day)
++stopifnot(max(edi_dat_crs$date) < min(edi_dat$date))
++edi_dat <- bind_rows(edi_dat_crs, edi_dat) %>%
++  data.frame()
++
+ #  -- WRITE OUT -----
+ # dataset for mo and jhux
+ # write_csv(dat_out, paste0(datpath, "homogenize/sdllogger_temp_draft2022.csv"))

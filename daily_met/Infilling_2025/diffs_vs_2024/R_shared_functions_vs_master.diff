@@ -1,0 +1,288 @@
+diff --git a/daily_met/R/fetch_data_functions.R b/daily_met/R/fetch_data_functions.R
+index d083876..091735e 100644
+--- a/daily_met/R/fetch_data_functions.R
++++ b/daily_met/R/fetch_data_functions.R
+@@ -170,15 +170,32 @@ fetchGHCND <- function(output_directory = getwd(),
+ 
+ # function to determine data package version number only (not return full data package ID)
+ getPackageVersion<-function(edi_id, site = "nwt"){
+-  versions=readLines(paste0('https://pasta.lternet.edu/package/eml/knb-lter-', site, '/', edi_id), warn=FALSE)
+-  currentV <- max(as.numeric(versions))
++  scope <- paste0("knb-lter-", site)
++  currentV <- EDIutils::list_data_package_revisions(
++    scope = scope,
++    identifier = as.numeric(edi_id),
++    filter = "newest"
++  )
+   return(currentV)
+ }
+ 
+ # function to get entity ID for current data package version
+ getEntityId <- function(edi_id, version, site = "nwt", datanum = 1){
+-  entID <- readLines(paste0('https://pasta.lternet.edu/package/eml/knb-lter-', site, '/', edi_id, "/", version, "/"), warn=FALSE)[datanum]
+-  entID <- gsub(paste0("http.*/",edi_id,"/",version,"/"), "", entID) # remove all chars except what comes after last /
++  packageId <- paste0("knb-lter-", site, ".", edi_id, ".", version)
++  entities <- EDIutils::read_data_entity_names(packageId = packageId)
++
++  if(datanum > nrow(entities)){
++    stop(
++      paste0(
++        "Requested datanum ", datanum,
++        " but package ", packageId,
++        " only has ", nrow(entities), " data entit",
++        ifelse(nrow(entities) == 1, "y", "ies"), "."
++      )
++    )
++  }
++
++  entID <- entities$entityId[datanum]
+   return(entID)
+ }
+ 
+@@ -187,15 +204,15 @@ getTabular <- function(edi_id, na_vals = c("", "NA", NA, NaN, ".", "NaN", " "),
+   # https://pasta.lternet.edu/package/data/eml/knb-lter-nwt/411/17/81101917c12b63474ddef47f104b7128
+   require(readr)
+   v <- getPackageVersion(edi_id, site = site)
++  packageId <- paste0("knb-lter-", site, ".", edi_id, ".", v)
+   id <- getEntityId(edi_id, v, site = site, datanum = datanum)
+-  cat(paste0("Reading in knb-lter-", site, ".", edi_id, ".", v), '...')
+-  dat <- readr::read_csv(
+-    paste0("https://pasta.lternet.edu/package/data/eml/knb-lter-", 
+-      site, "/", edi_id, "/", v, "/", id),
+-                trim_ws =TRUE, na = na_vals, col_types = col_class,
+-                guess_max = 100000, show_col_types = FALSE)
++  # read only the requested entity (downloading the whole package archive first was unused)
++  raw <- EDIutils::read_data_entity(packageId = packageId, entityId = id)
++  dat <- readr::read_csv(file = raw,
++                         trim_ws = TRUE, na = na_vals, col_types = col_class,
++                         guess_max = 100000, show_col_types = FALSE)
+   dat <- as.data.frame(dat)
+-  cat('Done.\n')
++  print(paste0("Reading in ", packageId))
+   return(dat)
+ }
+ 
+diff --git a/daily_met/R/ppt_infill_functions.R b/daily_met/R/ppt_infill_functions.R
+index e002d91..e6e1ba5 100644
+--- a/daily_met/R/ppt_infill_functions.R
++++ b/daily_met/R/ppt_infill_functions.R
+@@ -61,7 +61,7 @@ best_ln_regression <- function(dat, target_site, site_order, nobs_limit){
+ 
+ 
+ # shorter-term "seasonal" infill: -31 and +30 days before and after target infill date
+-tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qdayscheck = F, nobs_limit = 14){
++tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qdayscheck = F, nobs_limit = 14, reject_neg_slope = F){
+   
+   # initiate data frame for storing results
+   infill_df_season <- data.frame()
+@@ -133,7 +133,8 @@ tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qda
+                                       #logger = logger, 
+                                       r2 = summary(mod)$r.squared,
+                                       pval = summary(mod)$coefficients[8],
+-                                      nobs = nrow(mod$model))))
++                                      nobs = nrow(mod$model),
++                                      slope = coef(mod)[[2]])))
+     }
+     
+     # make numeric cols numeric
+@@ -145,6 +146,10 @@ tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qda
+     if(nrow(r2_df)>0){
+       r2_df <- subset(r2_df, r2 != 1 & nobs >= nobs_limit)
+     }
++    # optionally drop negative-slope fits (more precip at the source predicting less at the target is not physical)
++    if(reject_neg_slope & nrow(r2_df)>0){
++      r2_df <- subset(r2_df, as.numeric(slope) > 0)
++    }
+     # if r2_df empty because no models could be run, state that in infill df and move on
+     if(nrow(r2_df) == 0){
+       tempinfill_df <- data.frame(date = d, infill = NA,
+@@ -173,7 +178,7 @@ tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qda
+     }
+     # if there is a tie in r2, choose lowest pval (unless tie is r2==0)
+     if(nrow(best) > 1 & !all(is.na(best$pval))){
+-      best <- subset(best, r2 == max(r2, na.rm = T) & pval == max(pval, na.rm = T)) 
++      best <- subset(best, r2 == max(r2, na.rm = T) & pval == min(pval, na.rm = T)) 
+     }
+     #if best is still more than 1 row at this point (non 0 r2 and pval both tied), choose based on site order
+     # would apply to tied r2 and either all pvals are NA or pvals are tied
+@@ -226,7 +231,7 @@ tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qda
+ 
+ 
+ # build multi-year regression, +- 3 days on each side of target infill date
+-tk_ppt_historicfill <- function(dat, target_site, missing_dates, site_order, qdayscheck = F, nobs_limit = 14){
++tk_ppt_historicfill <- function(dat, target_site, missing_dates, site_order, qdayscheck = F, nobs_limit = 14, reject_neg_slope = F){
+   
+   # initiate data frame for storing results
+   infill_df_historic <- data.frame()
+@@ -304,8 +309,9 @@ tk_ppt_historicfill <- function(dat, target_site, missing_dates, site_order, qda
+       wide_df[paste0(target_site, "_ln")] <- ifelse(wide_df[[target_site]]>0, log(wide_df[[target_site]]), NA)
+       wide_df[paste0(site, "_ln")] <- ifelse(wide_df[[site]]>0, log(wide_df[[site]]), NA)
+       
+-      # check that there are days where both target site and source station have value so can run lm model
+-      if(all(is.na(wide_df[[paste0(target_site, "_ln")]][!is.na(wide_df[site])]))){
++      # check that there are days where both target site and source station have logged values so can run lm model
++      # (as in tk_ppt_seasonalfill; a source with only 0s on the shared days left lm with 0 cases)
++      if(all(is.na(wide_df[[paste0(target_site, "_ln")]][!is.na(wide_df[[paste0(site, "_ln")]])]))){
+         next
+       }
+       # run lm model and store results
+@@ -314,7 +320,8 @@ tk_ppt_historicfill <- function(dat, target_site, missing_dates, site_order, qda
+                      data.frame(cbind(site = site,
+                                       r2 = summary(mod)$r.squared,
+                                       pval = summary(mod)$coefficients[8],
+-                                      nobs = nrow(mod$model))))
++                                      nobs = nrow(mod$model),
++                                      slope = coef(mod)[[2]])))
+       
+     }
+     # make numeric cols numeric
+@@ -326,6 +333,10 @@ tk_ppt_historicfill <- function(dat, target_site, missing_dates, site_order, qda
+     if(nrow(r2_df)>0){
+       r2_df <- subset(r2_df, r2 != 1 & nobs >= nobs_limit)
+     }
++    # optionally drop negative-slope fits (more precip at the source predicting less at the target is not physical)
++    if(reject_neg_slope & nrow(r2_df)>0){
++      r2_df <- subset(r2_df, as.numeric(slope) > 0)
++    }
+     # if r2_df empty because no models could be run, state that in infill df and move on
+     if(nrow(r2_df) == 0){
+       tempinfill_df <- data.frame(date = d, infill = NA,
+diff --git a/daily_met/R/prep_data_functions.R b/daily_met/R/prep_data_functions.R
+index 9398531..46d1418 100644
+--- a/daily_met/R/prep_data_functions.R
++++ b/daily_met/R/prep_data_functions.R
+@@ -440,7 +440,22 @@ tidytemp <- function(dat, datasource = NA, sep = "_", special = "flag", dropcol
+       print("No replicates detected; if error, review output")
+     }
+   }
+-  
++
++  # Check if hv sensors present (new D1 sensors from Sep 2025, e.g. airtemp_hv1_max)
++  # (treat like HMPs: logger becomes cr1000_hv, rep is the sensor number)
++  hvs <- any(grepl("_hv\\d", dat_long$met))
++
++  if(hvs){
++    lastcol <- names(dat_long)[ncol(dat_long)]
++    if(!"rep" %in% names(dat_long)) dat_long$rep <- NA_character_
++    hvrep <- stringr::str_extract(dat_long$met, "_hv(\\d)", group = 1)
++    dat_long$rep <- ifelse(!is.na(hvrep), hvrep, dat_long$rep)
++    dat_long$logger <- ifelse(!is.na(hvrep), paste0(dat_long$logger, "_hv"), dat_long$logger)
++    dat_long$met <- gsub("_hv\\d", "", dat_long$met)
++    # reorg cols
++    dat_long <- subset(dat_long, select = c(1:met, rep, temp:get(lastcol)))
++  }
++
+   # if desired, prefix temp and special col colname with datasource
+   if(!is.na(datasource)){
+     colnames(dat_long)[
+diff --git a/daily_met/R/temp_infill_functions.R b/daily_met/R/temp_infill_functions.R
+index d38ddfd..03a28a3 100644
+--- a/daily_met/R/temp_infill_functions.R
++++ b/daily_met/R/temp_infill_functions.R
+@@ -21,14 +21,20 @@ mean_and_diurnalT <- function(dat){
+   
+   tempdat <- subset(dat, select = c(date, yr, mon, doy, local_site, metric, measurement)) %>%
+     tidyr::spread(metric, measurement)
+-  # if avg temp not present, make
++  # if avg temp not present, make. Done per site: the column can exist for some sites (e.g. hmps)
++  # but be empty for others that only report max and min (e.g. the 21x loggers). Sites that do
++  # report avg keep their NAs, since those can be deliberate QC removals.
+   if(!any(grepl("avg", names(tempdat)))){
+-    tempdat$airtemp_avg <- (tempdat$airtemp_max + tempdat$airtemp_min)/2
++    tempdat$airtemp_avg <- NA_real_
+   }
+-  # if diurnal temp not present, make
++  no_avg <- tempdat$local_site %in% names(which(tapply(tempdat$airtemp_avg, tempdat$local_site, function(x) all(is.na(x)))))
++  tempdat$airtemp_avg[no_avg] <- (tempdat$airtemp_max[no_avg] + tempdat$airtemp_min[no_avg])/2
++  # if diurnal temp not present, make (per site, same reason)
+   if(!any(grepl("DTR", names(tempdat), ignore.case = T))){
+-    tempdat$DTR <- tempdat$airtemp_max - tempdat$airtemp_min
++    tempdat$DTR <- NA_real_
+   }
++  no_dtr <- tempdat$local_site %in% names(which(tapply(tempdat$DTR, tempdat$local_site, function(x) all(is.na(x)))))
++  tempdat$DTR[no_dtr] <- tempdat$airtemp_max[no_dtr] - tempdat$airtemp_min[no_dtr]
+   
+   # return all mets back in case helpful for crunching tmax and tmin after predictions
+   tempdat <- gather(tempdat, metric, measurement, grep("temp|DTR", names(tempdat)))
+@@ -52,7 +58,7 @@ mean_and_diurnalT <- function(dat){
+ # > max # obs should be 28 OR fewer (if bc capped within a month)
+ # same window data predicts missing tmean and missing DTR, tmean and DTR must be predicted by same source station on a given date
+ 
+-tk_temp_movingfill <- function(dat, target_site, missing_dates, site_order, window_days=13, metric = c("airtemp_avg", "DTR"), windowcap = 30, nobs_limit = 14){
++tk_temp_movingfill <- function(dat, target_site, missing_dates, site_order, window_days=13, metric = c("airtemp_avg", "DTR"), windowcap = 30, nobs_limit = 14, reject_neg_slope = F){
+   # initiate empty data frame for storing predictions and regression info
+   dat_out <- data.frame()
+   for(d in as.character(missing_dates)){
+@@ -145,12 +151,15 @@ tk_temp_movingfill <- function(dat, target_site, missing_dates, site_order, wind
+       # }
+       # 
+       mod <- lm(formula = paste0(target_site, "_airtemp_avg ~ ", site, "_airtemp_avg"), data = wide_df)
++      # smallest slope across the metrics that will be infilled from this site (for reject_neg_slope)
++      min_slope <- min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = wide_df))[[2]]))
+       
+       r2_df <- rbind(r2_df, 
+                      data.frame(cbind(site = site,
+                                       nobs = nrow(mod$model),
+                                       r2 = summary(mod)$r.squared, # TK used r2 not adjusted r2
+-                                      pval = summary(mod)$coefficients[8])))
++                                      pval = summary(mod)$coefficients[8],
++                                      min_slope = min_slope)))
+       
+     }
+     
+@@ -164,6 +173,10 @@ tk_temp_movingfill <- function(dat, target_site, missing_dates, site_order, wind
+     if(nrow(r2_df)>0){
+       r2_df <- subset(r2_df, r2 != 1 & nobs >= temp_nobs)
+     }
++    # optionally drop sites where any metric's fit has a negative slope (no real signal, e.g. weak DTR fits)
++    if(reject_neg_slope & nrow(r2_df)>0){
++      r2_df <- subset(r2_df, as.numeric(min_slope) > 0)
++    }
+     
+     # if there is nothing bc nothing , next
+     if(nrow(r2_df) == 0){
+@@ -236,7 +249,7 @@ tk_temp_movingfill <- function(dat, target_site, missing_dates, site_order, wind
+ 
+ 
+ # build multi-year regression, +- 3 days on each side of target infill date
+-tk_temp_historicfill <- function(dat, target_site, missing_dates, site_order, metric = c("airtemp_avg", "DTR"), nobs_limit = 14){
++tk_temp_historicfill <- function(dat, target_site, missing_dates, site_order, metric = c("airtemp_avg", "DTR"), nobs_limit = 14, reject_neg_slope = F){
+   
+   # initiate data frame for storing results
+   dat_out <- data.frame()
+@@ -309,11 +322,14 @@ tk_temp_historicfill <- function(dat, target_site, missing_dates, site_order, me
+       
+       # run lm model and store results
+       mod <- lm(formula = paste0(target_site,"_airtemp_avg ~ ", site, "_airtemp_avg"), data = subset(wide_df, allthere))
++      # smallest slope across the metrics that will be infilled from this site (for reject_neg_slope)
++      min_slope <- min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = subset(wide_df, allthere)))[[2]]))
+       r2_df <- rbind(r2_df, 
+                      data.frame(cbind(site = site,
+                                       r2 = summary(mod)$r.squared,
+                                       pval = summary(mod)$coefficients[8],
+-                                      nobs = nrow(mod$model))))
++                                      nobs = nrow(mod$model),
++                                      min_slope = min_slope)))
+       
+     }
+     # make numeric cols numeric
+@@ -325,6 +341,10 @@ tk_temp_historicfill <- function(dat, target_site, missing_dates, site_order, me
+     if(nrow(r2_df)>0){
+       r2_df <- subset(r2_df, r2 != 1 & nobs >= nobs_limit)
+     }
++    # optionally drop sites where any metric's fit has a negative slope (no real signal, e.g. weak DTR fits)
++    if(reject_neg_slope & nrow(r2_df)>0){
++      r2_df <- subset(r2_df, as.numeric(min_slope) > 0)
++    }
+     # if r2_df empty because no models could be run, state that in infill df and move on
+     if(nrow(r2_df) == 0){
+       tempinfill_df <- data.frame(date = d, infill = NA,
+@@ -533,6 +553,8 @@ calculate_minmax <- function(chosen_dat, target_dat, target_site){
+   names(pred_tmean)[grep("infil|pval|r2|equ|obs", names(pred_tmean))] <- paste("airtemp_avg", names(pred_tmean)[grep("infil|pval|r2|equ|obs", names(pred_tmean))], sep = "_")
+   # merge
+   pred_dat <- merge(pred_tmean, pred_dtr)
++  # a regression intercept can predict a negative DTR (e.g., c1 2014-07-30), which would give tmax < tmin; floor at 0
++  pred_dat$dtr_infill <- pmax(pred_dat$dtr_infill, 0)
+   # calculate tmax and tmin to have it ready
+   pred_dat$tmax_infill <- with(pred_dat, airtemp_avg_infill + (dtr_infill/2))
+   pred_dat$tmin_infill <- with(pred_dat, airtemp_avg_infill - (dtr_infill/2))
