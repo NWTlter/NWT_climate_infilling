@@ -23,6 +23,18 @@ old_rds <- paste0(datpath, "raw/old_infilled_edi.rds")
 if (!file.exists(old_rds)) saveRDS(getNWTchartsinfilled(), old_rds)
 old <- readRDS(old_rds)
 
+# the posted tables and the drafts name the same source differently (Niwot Snotel (663) / Niwot (663) /
+# Niwot, C1-cr1000 / c1_cr1000, 053496 / USC00053496, US-NR1 / US_NR1_1_1_1, SDL / sdl_chart), so
+# compare sources on a common key; the csvs keep the names as published
+src_key <- function(x) {
+  x <- gsub(" snotel| \\([0-9]+\\)| logger", "", tolower(x))
+  x <- sub("^0([0-9]{5})$", "\\1", sub("^us[cw]00", "", x)) # GHCNd: last 5 digits of the ID
+  x <- gsub("[ _-]", "", x)
+  x <- sub("^(usnr[0-9])[0-9]+$", "\\1", x)                  # AmeriFlux tower, not sensor position
+  sub("^(c1|d1|sdl)$", "\\1chart", x)                       # bare site = its chart
+}
+src_changed <- function(old_src, new_src) src_key(old_src) != src_key(new_src)
+
 # -- temperature -----
 # flag_2: A raw, B both predicted, B* tmax failed, C tmax adjusted, D tmin adjusted
 old_t <- map_dfr(c("C1", "D1"), function(s) {
@@ -63,7 +75,7 @@ temp_summary <- cmp_t %>%
   group_by(site, metric, period, class) %>%
   summarise(n = n(), mean_diff = mean(diff, na.rm = TRUE), sd_diff = sd(diff, na.rm = TRUE),
             n_absdiff_gt_2 = sum(abs(diff) > 2, na.rm = TRUE),
-            n_source_changed = sum(class == "both infilled" & old_src != new_src, na.rm = TRUE),
+            n_source_changed = sum(class == "both infilled" & src_changed(old_src, new_src), na.rm = TRUE),
             .groups = "drop")
 write.csv(temp_summary, paste0(out_dir, "temp_summary.csv"), row.names = FALSE)
 write.csv(filter(cmp_t, class != "both raw" | abs(diff) > 0.05), paste0(out_dir, "temp_changed_days.csv"), row.names = FALSE)
@@ -105,7 +117,7 @@ ppt_summary <- cmp_p %>%
   group_by(site, period, class) %>%
   summarise(n = n(), old_mm = sum(old, na.rm = TRUE), new_mm = sum(new, na.rm = TRUE),
             n_absdiff_gt_5mm = sum(abs(diff) > 5, na.rm = TRUE),
-            n_source_changed = sum(class == "both infilled" & old_src != new_src, na.rm = TRUE),
+            n_source_changed = sum(class == "both infilled" & src_changed(old_src, new_src), na.rm = TRUE),
             .groups = "drop")
 write.csv(ppt_summary, paste0(out_dir, "precip_summary.csv"), row.names = FALSE)
 write.csv(filter(cmp_p, class != "both raw" | abs(diff) > 0.05), paste0(out_dir, "precip_changed_days.csv"), row.names = FALSE)
@@ -128,7 +140,7 @@ print(as.data.frame(cmp_t %>% filter(class == "both raw") %>% group_by(site, met
 cat("\n== Temperature: days infilled in both versions ==\n")
 print(as.data.frame(filter(temp_summary, class == "both infilled")), digits = 2, row.names = FALSE)
 cat("\n== Temperature: most common source changes (days infilled in both, tmax) ==\n")
-print(as.data.frame(head(filter(src_t, old_src != new_src), 20)), row.names = FALSE)
+print(as.data.frame(head(filter(src_t, src_changed(old_src, new_src)), 20)), row.names = FALSE)
 cat("\n== Precipitation, 1980-2024 ==\n")
 print(as.data.frame(ppt_summary), digits = 3, row.names = FALSE)
 cat("\n== Precipitation: years where the annual total changes by > 5% ==\n")
