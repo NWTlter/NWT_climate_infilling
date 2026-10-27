@@ -1,0 +1,73 @@
+--- Infilling_2024/1_prepare_climate_data.R
++++ Infilling_2025/1_prepare_climate_data.R
+@@ -15,7 +15,7 @@
+ # The script displays all code to demonstrate the process and identify potential issues.
+ 
+ # Set working directory
+-setwd("~/FilingCabinet/NWTLTER/NWT_climate_infilling/")
++# setwd("~/FilingCabinet/NWTLTER/NWT_climate_infilling/")
+ 
+ # Load required libraries
+ library(tidyverse)
+@@ -29,10 +29,14 @@
+ lapply(script_paths, source)
+ 
+ # Define data paths
+-datpath <- "~/OneDrive - UCB-O365/NWT_Infilling_2024/data"
++datpath <-  "daily_met/Infilling_2025/data/"
+ fluxpath <- file.path(datpath, "raw", "AmeriFlux/")
+ ghcndpath <- file.path(datpath, "raw", "GHCNd/")
+ npnpath <- file.path(datpath, "raw/NPN/") #ETI Gauge from npn website
++# note you must manually download the PRECIP_CO90_DAILY.csv file from
++# here https://nadp.slh.wisc.edu/networks/nadp-precipitation-network/
++# select daily, then CO90 on the righthand side of the page to download
++# the csv
+ 
+ # Toggle for plot display
+ view_plots <- FALSE # If you just need to rerun quickly, FALSE will skip plotting
+@@ -46,7 +50,7 @@
+     }
+   }
+ }
+-create_subfolders(datpath, c("prep", "qc", "infill", "homogenize"))
++create_subfolders(datpath, c("prep", "qc", "infill", "homogenize", "publish", "plots"))
+ 
+ # Read in dynamic datasets
+ snotel <- getSnotelNeighbors()
+@@ -64,7 +68,9 @@
+ ameriflux <- fetchAmeriFlux(fluxpath, ameriflux_user_id = 'MilesMooreNWT',
+                             ameriflux_email = 'Miles.Moore-1@colorado.edu')
+ ghcnd <- fetchGHCND(ghcndpath)
+-npn <- readr::read_csv(list.files(npnpath, full.names = T)) |> 
++npn <- readr::read_csv(list.files(npnpath, full.names = T),
++                       # first line is metadata
++                       skip =1) |> 
+   dplyr::mutate(siteID = "CO90")
+ 
+ # -- SCREEN AND SELECT DATA -----
+@@ -156,7 +162,7 @@
+     local_site = 'NPN',
+     metric = 'ppt_tot',
+     flag_ppt_tot = 'n',
+-    measurement = measurement * 2.54 #convert to cm
++    measurement = measurement * 25.4 # convert inches to mm (same units as other precip sources)
+ ) |> select(names(c1loggerPPT_out))
+ 
+ c1loggerPPT_out <- bind_rows(c1loggerPPT_out, clean_npn) # Join ETI gauge to loggers
+@@ -180,6 +186,8 @@
+ # prep function selects meteorological variables of interest, classes timestamps as POSIX, and pulls out dates and time separately from the timestamps
+ # because data read in to a list, apply function to each element in list
+ ameriflux_prepped <- lapply(ameriflux, prepAmeriflux)
++# sub-hourly flux data are read as character, so each copy is GBs; free as we go
++rm(ameriflux); gc()
+ 
+ #' # visualize data available (missing/present) and data as read in (look for oddities and outliers)
+ #' # because ameriflux data are sub-daily, plotting can take some time for stations that have fairly complete records for multiple variables
+@@ -196,6 +204,7 @@
+ #' For sub-hourly data, the next step in prepping data for this workflow's QC is to aggregate sub-hourly to daily data, just for columns and sites of interest
+ 
+ ameriflux_daily <- lapply(ameriflux_prepped, sub2daily)
++rm(ameriflux_prepped); gc()
+ 
+ #' From here, review daily data to see what you'd like to keep for QC and possible use in infilling
+ #' 

@@ -10,6 +10,10 @@ latest data from EDI and the various nearby stations. This year we added improve
 the data fetch function. No longer does the user need to manually download any data! All are 
 retrieved programmaticly. There is some additional code in here for visualizing data quality 
 from provided flags as well as data availability.
+*Correction (2026-10-27):* one file is not retrieved automatically. From 2024 the NADP ETI gauge
+file `PRECIP_CO90_DAILY.csv` must be downloaded by hand into `data/raw/NPN/`
+(<https://nadp.slh.wisc.edu/networks/nadp-precipitation-network/>: daily, then CO90); script 1
+fails without it.
 
 `2T_qc_[temp/ppt]_data.R` - This code is used to read in, clean, and visually
 inspect the data that will ultimately be used to infill c1 temperature.

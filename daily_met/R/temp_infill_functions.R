@@ -21,14 +21,20 @@ mean_and_diurnalT <- function(dat){
   
   tempdat <- subset(dat, select = c(date, yr, mon, doy, local_site, metric, measurement)) %>%
     tidyr::spread(metric, measurement)
-  # if avg temp not present, make
+  # if avg temp not present, make. Done per site: the column can exist for some sites (e.g. hmps)
+  # but be empty for others that only report max and min (e.g. the 21x loggers). Sites that do
+  # report avg keep their NAs, since those can be deliberate QC removals.
   if(!any(grepl("avg", names(tempdat)))){
-    tempdat$airtemp_avg <- (tempdat$airtemp_max + tempdat$airtemp_min)/2
+    tempdat$airtemp_avg <- NA_real_
   }
-  # if diurnal temp not present, make
+  no_avg <- tempdat$local_site %in% names(which(tapply(tempdat$airtemp_avg, tempdat$local_site, function(x) all(is.na(x)))))
+  tempdat$airtemp_avg[no_avg] <- (tempdat$airtemp_max[no_avg] + tempdat$airtemp_min[no_avg])/2
+  # if diurnal temp not present, make (per site, same reason)
   if(!any(grepl("DTR", names(tempdat), ignore.case = T))){
-    tempdat$DTR <- tempdat$airtemp_max - tempdat$airtemp_min
+    tempdat$DTR <- NA_real_
   }
+  no_dtr <- tempdat$local_site %in% names(which(tapply(tempdat$DTR, tempdat$local_site, function(x) all(is.na(x)))))
+  tempdat$DTR[no_dtr] <- tempdat$airtemp_max[no_dtr] - tempdat$airtemp_min[no_dtr]
   
   # return all mets back in case helpful for crunching tmax and tmin after predictions
   tempdat <- gather(tempdat, metric, measurement, grep("temp|DTR", names(tempdat)))
@@ -52,7 +58,7 @@ mean_and_diurnalT <- function(dat){
 # > max # obs should be 28 OR fewer (if bc capped within a month)
 # same window data predicts missing tmean and missing DTR, tmean and DTR must be predicted by same source station on a given date
 
-tk_temp_movingfill <- function(dat, target_site, missing_dates, site_order, window_days=13, metric = c("airtemp_avg", "DTR"), windowcap = 30, nobs_limit = 14){
+tk_temp_movingfill <- function(dat, target_site, missing_dates, site_order, window_days=13, metric = c("airtemp_avg", "DTR"), windowcap = 30, nobs_limit = 14, reject_neg_slope = F){
   # initiate empty data frame for storing predictions and regression info
   dat_out <- data.frame()
   for(d in as.character(missing_dates)){
@@ -145,12 +151,15 @@ tk_temp_movingfill <- function(dat, target_site, missing_dates, site_order, wind
       # }
       # 
       mod <- lm(formula = paste0(target_site, "_airtemp_avg ~ ", site, "_airtemp_avg"), data = wide_df)
+      # smallest slope across the metrics that will be infilled from this site (for reject_neg_slope)
+      min_slope <- if(reject_neg_slope) min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = wide_df))[[2]])) else NA
       
       r2_df <- rbind(r2_df, 
                      data.frame(cbind(site = site,
                                       nobs = nrow(mod$model),
                                       r2 = summary(mod)$r.squared, # TK used r2 not adjusted r2
-                                      pval = summary(mod)$coefficients[8])))
+                                      pval = summary(mod)$coefficients[8],
+                                      min_slope = min_slope)))
       
     }
     
@@ -163,6 +172,10 @@ tk_temp_movingfill <- function(dat, target_site, missing_dates, site_order, wind
     # remove any row that has an r2 of 1 (unrealistic) and filter out any model nobs less than limit specified (TK has a min of 14)
     if(nrow(r2_df)>0){
       r2_df <- subset(r2_df, r2 != 1 & nobs >= temp_nobs)
+    }
+    # optionally drop sites where any metric's fit has a negative slope (no real signal, e.g. weak DTR fits)
+    if(reject_neg_slope & nrow(r2_df)>0){
+      r2_df <- subset(r2_df, as.numeric(min_slope) > 0)
     }
     
     # if there is nothing bc nothing , next
@@ -236,7 +249,7 @@ tk_temp_movingfill <- function(dat, target_site, missing_dates, site_order, wind
 
 
 # build multi-year regression, +- 3 days on each side of target infill date
-tk_temp_historicfill <- function(dat, target_site, missing_dates, site_order, metric = c("airtemp_avg", "DTR"), nobs_limit = 14){
+tk_temp_historicfill <- function(dat, target_site, missing_dates, site_order, metric = c("airtemp_avg", "DTR"), nobs_limit = 14, reject_neg_slope = F){
   
   # initiate data frame for storing results
   dat_out <- data.frame()
@@ -309,11 +322,14 @@ tk_temp_historicfill <- function(dat, target_site, missing_dates, site_order, me
       
       # run lm model and store results
       mod <- lm(formula = paste0(target_site,"_airtemp_avg ~ ", site, "_airtemp_avg"), data = subset(wide_df, allthere))
+      # smallest slope across the metrics that will be infilled from this site (for reject_neg_slope)
+      min_slope <- if(reject_neg_slope) min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = subset(wide_df, allthere)))[[2]])) else NA
       r2_df <- rbind(r2_df, 
                      data.frame(cbind(site = site,
                                       r2 = summary(mod)$r.squared,
                                       pval = summary(mod)$coefficients[8],
-                                      nobs = nrow(mod$model))))
+                                      nobs = nrow(mod$model),
+                                      min_slope = min_slope)))
       
     }
     # make numeric cols numeric
@@ -324,6 +340,10 @@ tk_temp_historicfill <- function(dat, target_site, missing_dates, site_order, me
     # remove any row that has an r2 of 1 (unrealistic) and filter out any model nobs less than limit specified (TK has a min of 14)
     if(nrow(r2_df)>0){
       r2_df <- subset(r2_df, r2 != 1 & nobs >= nobs_limit)
+    }
+    # optionally drop sites where any metric's fit has a negative slope (no real signal, e.g. weak DTR fits)
+    if(reject_neg_slope & nrow(r2_df)>0){
+      r2_df <- subset(r2_df, as.numeric(min_slope) > 0)
     }
     # if r2_df empty because no models could be run, state that in infill df and move on
     if(nrow(r2_df) == 0){
@@ -533,6 +553,8 @@ calculate_minmax <- function(chosen_dat, target_dat, target_site){
   names(pred_tmean)[grep("infil|pval|r2|equ|obs", names(pred_tmean))] <- paste("airtemp_avg", names(pred_tmean)[grep("infil|pval|r2|equ|obs", names(pred_tmean))], sep = "_")
   # merge
   pred_dat <- merge(pred_tmean, pred_dtr)
+  # a regression intercept can predict a negative DTR (e.g., c1 2014-07-30), which would give tmax < tmin; floor at 0
+  pred_dat$dtr_infill <- pmax(pred_dat$dtr_infill, 0)
   # calculate tmax and tmin to have it ready
   pred_dat$tmax_infill <- with(pred_dat, airtemp_avg_infill + (dtr_infill/2))
   pred_dat$tmin_infill <- with(pred_dat, airtemp_avg_infill - (dtr_infill/2))

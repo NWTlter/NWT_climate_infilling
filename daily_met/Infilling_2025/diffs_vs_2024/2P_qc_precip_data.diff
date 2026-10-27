@@ -1,0 +1,114 @@
+--- Infilling_2024/2P_qc_precip_data.R
++++ Infilling_2025/2P_qc_precip_data.R
+@@ -26,7 +26,7 @@
+ source("daily_met/R/prep_data_functions.R")
+ 
+ # set path to prepared data
+-datpath <- "~/OneDrive - UCB-O365/NWT_Infilling_2024/data/"
++datpath <- "daily_met/Infilling_2025/data/"
+ #csvfiles <- list.files(paste0(datpath, "prep"), pattern = "csv", full.names = T)
+ # list all rds files in prepped data folder (full path directory)
+ rdsfiles <- list.files(paste0(datpath, "prep"), pattern = "rds", full.names = T)
+@@ -48,6 +48,10 @@
+ # checks for 1) dates with non-NA values [in ppt or qdays] that fall in a qdays > 1 backfill period
+ # and 2) NAs non-sensical qdays values (will report what the values were)
+ # both of these checks add a qc note so can pull up just the records that were flagged
++# d1 2012-01-16 172 mm is recorded as a 19-day total, but 2011-12-29 has its own 1-day reading (13 mm),
++# so the period is 2011-12-30 to 2012-01-16 = 18 days (as 3P corrects it). Correct it before the check,
++# otherwise the check NAs the valid 2011-12-29 reading
++chartppt$qdays[chartppt$local_site == "d1" & chartppt$date == as.Date("2012-01-16")] <- 18
+ chartppt_out <- qc_qdays(chartppt, "local_site")
+ # subset which flagged values to visual review
+ reviewdat <- subset(chartppt_out, grepl("ppt value falls", qdays_qcnote))
+@@ -141,11 +145,14 @@
+ 
+ chartppt_out_qc <- left_join(chartppt_out, tkflagged[c("date", "local_site", "precip", "source_station", "tk_qcnote")]) %>%
+   data.frame() %>%
++  # from 2011 on the raw flag is "n" (no flag), "m" (missing) or "q"; only the pre-2011 codes 1/2 mark old infill
++  # (treating "n" as a flag noted every unflagged sdl day as infilled by outdated method)
++  mutate(raw_flagged = !is.na(flag_ppt_tot) & !flag_ppt_tot %in% c("n", "m")) %>%
+   mutate(mismatch = measurement != precip,
+     infill_qcnote = ifelse(flag_ppt_tot == "q" & !is.na(flag_ppt_tot), "JM flagged as questionable",
+-                                ifelse(!is.na(flag_ppt_tot) & local_site == "sdl", "infilled by outdated method", 
+-                                       ifelse(!is.na(flag_ppt_tot) & !is.na(tk_qcnote), paste("infilled by outdated method,", tk_qcnote), 
+-                                              ifelse(!is.na(flag_ppt_tot), "flagged in raw, tk did not flag", tk_qcnote))))) %>%
++                                ifelse(raw_flagged & local_site == "sdl", "infilled by outdated method",
++                                       ifelse(raw_flagged & !is.na(tk_qcnote), paste("infilled by outdated method,", tk_qcnote),
++                                              ifelse(raw_flagged, "flagged in raw, tk did not flag", tk_qcnote))))) %>%
+   # if tk did not flag and is c1 or d1, return measurement value (these are all 0 ppt values in 1960s after instrument change)
+   mutate(measurement = ifelse(grepl("tk did not flag", infill_qcnote), raw, measurement)) %>%
+   # NA anything that is noted as infilled by TK method/has an infill note and qdays == 1 EXCEPT if (measurement == 0 & raw == 0)
+@@ -153,7 +160,7 @@
+   mutate(measurement = ifelse(!is.na(infill_qcnote) &  !grepl("tk did not flag", infill_qcnote) & yr < 2011, NA, measurement)) %>%
+   # start data at 1964-10-01 (since that is when d1 starts; takes care of unshielded data at c1)
+   # and select only columns of interest for writing out
+-  subset(date >= min(chartppt$date[chartppt$local_site == "d1"]), select = -c(LTER_site, flag_ppt_tot, precip:mismatch)) %>%
++  subset(date >= min(chartppt$date[chartppt$local_site == "d1"]), select = -c(LTER_site, flag_ppt_tot, raw_flagged, precip:mismatch)) %>%
+   rename(station_name = local_site)
+ 
+ # -- REVIEW CANDIDATE REF DATS -----
+@@ -163,6 +170,8 @@
+ # -- 1. GHCNd -----
+ # limit other dat by starting date of nwt chart data
+ ghcnd_out <- subset(ghcnd, date >= min(chartppt_out_qc$date))
++# GHCN-Daily PRCP is stored in tenths of mm; convert to mm like the other precip sources
++ghcnd_out$measurement <- ghcnd_out$measurement / 10
+ # in ghcnd want to check if time of observation influences measurement trend at all (shouldn't for ppt)
+ 
+ # check for time change at stations
+@@ -250,6 +259,15 @@
+ ghcnd_out$local_site[grepl("116$", ghcnd_out$station_id) & ghcnd_out$date < switchdate] <- with(ghcnd_out, paste(unique(station_id[grepl("116$", ghcnd_out$station_id)]), "0700", sep = "_"))
+ ghcnd_out$local_site[grepl("116$", ghcnd_out$station_id) & ghcnd_out$date >= switchdate] <- with(ghcnd_out, paste(unique(station_id[grepl("116$", ghcnd_out$station_id)]), time_observed[grepl("116$", station_id) & date == switchdate], sep = "_"))
+ 
++# USC00052761's whole record is dated one day late relative to calendar-day stations
++# (max, min and precip all align best with Boulder USW00094075 / Niwot SNOTEL / C1 when
++# shifted back 1 day; other co-op stations do not), so shift it back 1 day
++shift_1day <- ghcnd_out$local_site == "USC00052761"
++ghcnd_out$date[shift_1day] <- ghcnd_out$date[shift_1day] - 1
++ghcnd_out$yr[shift_1day] <- lubridate::year(ghcnd_out$date[shift_1day])
++ghcnd_out$mon[shift_1day] <- lubridate::month(ghcnd_out$date[shift_1day])
++ghcnd_out$doy[shift_1day] <- lubridate::yday(ghcnd_out$date[shift_1day])
++
+ 
+ # -- 2. SNOTEL ------
+ # what are the flags?
+@@ -314,6 +332,11 @@
+ 
+ # -- 3. Ameriflux -----
+ # okay as is since only 1 sensor being considered for ppt
++# Note (2025 review): US-NR1 precip is only an independent gauge 2003-2010. From 2011 on it
++# is effectively Boulder 14 W (USW00094075): 2011-2022 are AmeriFlux gap-filled values and
++# 2023+ report the same gauge (r = 1, identical annual totals; small daily differences are
++# likely day-boundary timing). Still used in the cross-station check below (CTW's rules need ameri_pos),
++# but only 1998-2010 is written out for infilling so it can't stand in for Boulder 14 W (and bypass its NAs)
+ ameriflux_out <- rename(ameriflux, measurement = qc_measurement, raw = raw_measurement) %>%
+   # pair rep id with station id
+   mutate(local_site = paste0(station_id, rep))
+@@ -354,9 +377,18 @@
+ nwt_info$station_id <- paste(nwt_info$local_site, "chart")
+ nwt_info$station_name <- nwt_info$local_site
+ 
++# this is the eti_info, but if it's marked as exactly the same
++# it will be ignored in the infilling
++# eti_info <- data.frame(rbind(
++#   c("NPN", 40.03596085439916, -105.54415060302942, 3022) #C1 ETI Gauge
++# ))
++
++# add a tiny bit
+ eti_info <- data.frame(rbind(
+-  c("NPN", 40.03596085439916, -105.54415060302942, 3022) #C1 ETI Gauge
++  c("NPN", 40.03596086, -105.54415061, 3023) #C1 ETI Gauge
+ ))
++
++
+ names(eti_info) <- c("local_site", "latitude", "longitude", "elevation")
+ eti_info[,2:4] <- apply(eti_info[,2:4], 2, as.numeric)
+ str(eti_info)
+@@ -621,6 +653,6 @@
+ saveRDS(c1logppt_out, paste0(datpath, "/qc/c1loggerPPT_qc.rds")) 
+ saveRDS(ghcnd_out2, paste0(datpath, "/qc/ghcndPPT_qc.rds")) #15 MB
+ saveRDS(snotel_out2, paste0(datpath, "/qc/snotelPPT_qc.rds")) #15 MB
+-saveRDS(ameriflux_out, paste0(datpath, "/qc/amerifluxPPT_qc.rds")) #15 MB
++saveRDS(subset(ameriflux_out, yr <= 2010), paste0(datpath, "/qc/amerifluxPPT_qc.rds")) # own gauge only, see note in section 3
+ saveRDS(allsites, paste0(datpath, "/qc/siteinfoPPT_qc.rds")) #15 MB
+ 

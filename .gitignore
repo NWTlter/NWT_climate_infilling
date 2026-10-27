@@ -10,3 +10,11 @@
 #Ignore CSVs
 *.csv
 
+# Ignore R default plot output from non-interactive runs
+Rplots.pdf
+
+# Ignore downloaded and generated infilling data (re-created by running the scripts)
+daily_met/Infilling_2025/data/
+
+# Keep the long-term-trends QC files that 2T_qc_temp_data.R reads (exception to *.csv above)
+!daily_met/Infilling_2025/long-term-trends-data-copy/**/*.csv
