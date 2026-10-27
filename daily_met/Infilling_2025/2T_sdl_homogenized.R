@@ -24,6 +24,7 @@ source("daily_met/R/fetch_data_functions.R")
 
 datpath <- "daily_met/Infilling_2025/data/"
 plotpath <- "daily_met/Infilling_2025/data/plots/qc_review/"
+dir.create(plotpath, recursive = TRUE, showWarnings = FALSE)
 # last day of the pre-HMP loggers (3T infills the HMPs from 2018)
 sdl_homog_end <- as.Date("2017-12-31")
 
