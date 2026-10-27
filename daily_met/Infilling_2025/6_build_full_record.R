@@ -89,6 +89,17 @@ for (i in seq_len(nrow(datasets))) {
     }
   }
 
+  # temps, DTR, precip, adjustments, raw values and r2 to 3 decimals (infilled values carry up to 17).
+  # Only values with more than 3 decimals are rewritten, so e.g. posted "12.5" stays "12.5".
+  # p-values, observation counts and regression equations are left as is
+  num_cols <- grep("temp|DTR|dtr|precip|adjustment|homogenized|gapfilled|^raw_|rsquared", names(full), value = TRUE)
+  num_cols <- grep("pvalue|num_obs|equation|flag|note|qdays|source", num_cols, value = TRUE, invert = TRUE)
+  for (col in num_cols) {
+    x <- full[[col]]
+    long <- !is.na(x) & (grepl("\\.[0-9]{4,}", x) | grepl("e", x, ignore.case = TRUE))
+    full[[col]][long] <- as.character(round(as.numeric(x[long]), 3))
+  }
+
   # every date once, no gaps
   dates <- as.Date(full$date)
   stopifnot(!any(duplicated(dates)), all(seq.Date(min(dates), max(dates), 1) %in% dates))

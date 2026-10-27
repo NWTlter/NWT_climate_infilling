@@ -170,10 +170,17 @@ kept exactly as posted on EDI.
     9,037 D1 rows). Precip keeps the gauge
     name on measured days (e.g. "C1 Belfort Shielded", "C1 Totalizing Unshielded"), since
     it says which gauge measured.
+  - All six files: temperatures, DTR, precip, CTW's adjustments, raw values and r² are rounded
+    to 3 decimals (infilled values had up to 17, e.g. `9.77820838767388`). Only values with
+    more than 3 decimals are rewritten (each moves ≤0.0005). p-values, observation counts and
+    regression equations are left as is (most p-values are like `5.8e-68`). This also changes
+    kept posted rows: TK's pre-1980 C1/D1 infill (641 / 1,190 temp rows, 3,729 / 5,551 precip
+    rows, mostly r²) and all of CTW's Saddle values (e.g. adjustment −1.4328 → −1.433). After
+    rounding, Saddle homogenized = gapfilled + adjustment holds to within 0.001 °C.
   - Checks for duplicate and missing dates, then writes `data/publish/full_record/`.
   - Reads the posted tables as text and writes them in EDI's layout (all values quoted
     except date and NaN), so posted rows are byte-identical to EDI apart from the
-    `source_station` change above. The first version read
+    `source_station` change and 3-decimal rounding above. The first version read
     them as numbers, which trimmed 131 SDL temp p-values by one digit.
 
 ---

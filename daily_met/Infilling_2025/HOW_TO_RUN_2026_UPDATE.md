@@ -155,7 +155,8 @@ day from the start year through the last day of data, and step 5 writes everythi
 ### 3.4 Append vs full republish (`6_build_full_record.R`, `datasets` table)
 
 - **Append:** for all six rows, `new_start = as.Date("2026-01-01")` and `keep_posted = TRUE`.
-  The posted 1952–2025 rows (including the 2025 republish) stay byte-identical.
+  The posted 1952–2025 rows (including the 2025 republish) stay byte-identical; they are
+  already at ≤3 decimals, so the script's 3-decimal rounding only touches the new rows.
 - **Full republish:** keep the 2025 settings, which are already in the file.
 
 ## 4. Run the scripts, in order
