@@ -203,6 +203,8 @@ All write to `daily_met/Infilling_2025/data/plots/`; see `data/plots/README.md` 
 | `qc_review_d1_2018.R` | 2T | D1 HMPs 2018–2019 vs neighbors |
 | `qc_review_2025_infill.R` | step 5 | 2025 infilled values vs independent regional neighbors |
 | `qc_compare_old_infill.R` | 3T/3P | New C1/D1 1980–2024 vs published knb-lter-nwt.184–187 |
+| `qc_compare_republish.R` | 6_build | All six datasets, posted EDI vs the 2025 full record: annual and seasonal (DJF/MAM/JJA/SON) means of Tmax/Tmean/Tmin and precip totals, overlaid → `qc_review/republish_vs_posted_{c1,d1,saddle}.png` |
+| `daily_met/infill_qc_check/qc_infilled_vs_raw.R` | step 5 | Checks whether infilled values have drifted from raw (added before the 2025 work) |
 
 ## 5. Not changed on purpose
 
@@ -317,7 +319,9 @@ her infill. CTW's CR21x adjustment is 0, and that is kept for 2025. Things to lo
 
 | Commit | Summary |
 |---|---|
-| `82874f8` | 2025 scripts added (copied from 2024 with small edits, incl. ETI gauge as a source); EDIutils fetch helpers |
+| `faebcf0` | EDI fetch helpers rewritten on EDIutils |
+| `bae2763` | `infill_qc_check/qc_infilled_vs_raw.R` |
+| `82874f8` | 2025 scripts added (copied from 2024 with small edits, incl. ETI gauge as a source) |
 | `cd73343` | Script 1 memory fix |
 | `bed003c` | Workflow runs end to end: paths, GHCN units, USC00052761 shift, SNOTEL/AmeriFlux QC fixes, avg/DTR filter, hv sensors, long-term-trends copies, step-5 EDI reads |
 | `43d9fe3` | Review scripts for suspect periods and 2025 neighbors; US-NR1 note; setup notes |
@@ -325,3 +329,9 @@ her infill. CTW's CR21x adjustment is 0, and that is kept for 2025. Things to lo
 | `8155232` | Niwot window extended, viz paths fixed |
 | `d9cdf19` | US-NR1 precip used only 1998–2010 |
 | `d621d4b` | SDL precip starts 1987-06-01; historic-fill `lm` check |
+| `45215bc` | Republish all six datasets from their re-infill start (`6_build_full_record.R`); review fixes: CTW QA flags carried, 3P H-flag handling, "outdated method" note, EDI tables read as text |
+| `2b854a6` | SDL temp re-infilled from 1986 on CTW's homogenized series (`2T_sdl_homogenized.R`, 3T, 4T); 1992 CR21x minimums removed |
+| `593eecc` | D1 2012-01-16 accumulation corrected before the qdays check; `qc_compare_republish.R`; CR21x note for next year |
+| `b55d298` | CTW's "Predicted infill chosen" note carried; `HOW_TO_RUN_2026_UPDATE.md` |
+| `0aee255` | Negative predicted DTR set to 0 (C1 2014-07-30); `getTabular()` reads only the requested entity; C1/D1 metadata corrections |
+| `b588167` | `diffs_vs_2024/` (each script vs 2024); metadata notes per dataset |
