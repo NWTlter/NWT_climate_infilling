@@ -152,7 +152,7 @@ tk_temp_movingfill <- function(dat, target_site, missing_dates, site_order, wind
       # 
       mod <- lm(formula = paste0(target_site, "_airtemp_avg ~ ", site, "_airtemp_avg"), data = wide_df)
       # smallest slope across the metrics that will be infilled from this site (for reject_neg_slope)
-      min_slope <- min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = wide_df))[[2]]))
+      min_slope <- if(reject_neg_slope) min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = wide_df))[[2]])) else NA
       
       r2_df <- rbind(r2_df, 
                      data.frame(cbind(site = site,
@@ -323,7 +323,7 @@ tk_temp_historicfill <- function(dat, target_site, missing_dates, site_order, me
       # run lm model and store results
       mod <- lm(formula = paste0(target_site,"_airtemp_avg ~ ", site, "_airtemp_avg"), data = subset(wide_df, allthere))
       # smallest slope across the metrics that will be infilled from this site (for reject_neg_slope)
-      min_slope <- min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = subset(wide_df, allthere)))[[2]]))
+      min_slope <- if(reject_neg_slope) min(sapply(metric, function(m) coef(lm(paste0(target_site, "_", m, " ~ ", site, "_", m), data = subset(wide_df, allthere)))[[2]])) else NA
       r2_df <- rbind(r2_df, 
                      data.frame(cbind(site = site,
                                       r2 = summary(mod)$r.squared,
