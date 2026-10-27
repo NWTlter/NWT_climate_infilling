@@ -299,8 +299,8 @@ Definitions: USC00050183 Allenspark (script comment says 2SE; the EML's 50183 sa
 worth checking), USC00051681 Coal Creek Canyon, USC00052761 Estes Park 3 SSE, USC00053116
 Fraser, USC00053496 Grand Lake 1 NW, USC00053500 Grand Lake 6 SSW, USC00055878 Nederland
 2 NNE, USC00059175 Winter Park, USW00094075 Boulder 14 W (USCRN); "Name (number)" = NRCS
-SNOTEL site; US-NR1 / US-NR3 / US-NR4 = AmeriFlux Niwot Ridge forest / Tvan East / Tvan
-West; NPN = NADP ETI gauge at C1 (CO90); "<site> chart" = chart recorder;
+SNOTEL site; US-NR1 / US-NR3 / US-NR4 = AmeriFlux Niwot Ridge Forest / Alpine T-Van West / T-Van
+East; NPN = NADP ETI gauge at C1 (CO90); "<site> chart" = chart recorder;
 "<site> logger <model> [sensor]" = datalogger, with HMP-1/2/3, HV 1/2, ASP 1 the sensors.
 
 For 185 and 187 also: NaN = measured (`flag_1` A), no source station (step 6 now writes

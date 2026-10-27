@@ -1,0 +1,652 @@
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>Air temperature data for D1 chart recorder, 1952 - ongoing.</title>
+<creator>
+   <individualName>
+     <givenName>Jennifer F.</givenName>
+     <surName>Morse</surName>
+   </individualName>
+   <electronicMailAddress>jennifer.f.morse@colorado.edu</electronicMailAddress>
+   <userId directory="https://orcid.org">https://orcid.org/0000-0003-3207-3776</userId>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Mark</givenName>
+     <surName>Losleben</surName>
+   </individualName>
+   <electronicMailAddress>losleben@email.arizona.edu</electronicMailAddress>
+</creator>
+<creator>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references an EML document that describes data used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://pasta.lternet.edu/package/metadata/eml/knb-lter-nwt/412/18</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <positionName>Information Manager</positionName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+   <userId directory="https://ror.org">https://ror.org/02ep77d74</userId>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>Infilled daily air temperature data for D1 chart recorder, 1952 - ongoing.</title>
+<creator>
+   <individualName>
+     <givenName>Timothy</givenName>
+     <surName>Kittel</surName>
+   </individualName>
+   <electronicMailAddress>kittel@colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Caitlin</givenName>
+     <surName>White</surName>
+   </individualName>
+   <electronicMailAddress>caitlin.t.white@colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Michael</givenName>
+     <surName>Hartman</surName>
+   </individualName>
+   <electronicMailAddress>hartmama@culter@colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Kurt</givenName>
+     <surName>Chowanski</surName>
+   </individualName>
+   <electronicMailAddress>kurt.chowanski@colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Todd</givenName>
+     <surName>Ackerman</surName>
+   </individualName>
+   <electronicMailAddress>todda@culter@colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Mark</givenName>
+     <surName>Williams</surName>
+   </individualName>
+   <electronicMailAddress>markw@snobear.colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Mark</givenName>
+     <surName>Losleben</surName>
+   </individualName>
+   <electronicMailAddress>markl@colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Miles A.</givenName>
+     <surName>Moore</surName>
+   </individualName>
+   <electronicMailAddress>miles.moore-1@colorado.edu</electronicMailAddress>
+   <userId directory="https://orcid.org">https://orcid.org/0009-0003-0173-7602</userId>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references an EML document that describes data used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://pasta.lternet.edu/package/metadata/eml/knb-lter-nwt/187/5</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <positionName>Information Manager</positionName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+   <userId directory="https://ror.org">https://ror.org/02ep77d74</userId>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>Climate data for D1 data logger (CR21X), 1986 - 2000.</title>
+<creator>
+   <individualName>
+     <givenName>Jennifer F</givenName>
+     <surName>Morse</surName>
+   </individualName>
+   <electronicMailAddress>jennifer.f.morse@colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Mark</givenName>
+     <surName>Losleben</surName>
+   </individualName>
+   <electronicMailAddress>losleben@email.arizona.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references an EML document that describes data used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://pasta.lternet.edu/package/metadata/eml/knb-lter-nwt/70/3</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <positionName>Information Manager</positionName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>Climate data for Saddle data logger (CR21X), 1986-2000.</title>
+<creator>
+   <individualName>
+     <givenName>Jennifer F</givenName>
+     <surName>Morse</surName>
+   </individualName>
+   <electronicMailAddress>jennifer.f.morse@colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Mark</givenName>
+     <surName>Losleben</surName>
+   </individualName>
+   <electronicMailAddress>losleben@email.arizona.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references an EML document that describes data used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://pasta.lternet.edu/package/metadata/eml/knb-lter-nwt/78/3</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <positionName>Information Manager</positionName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>Climate data for Green Lake 4 data loggers (CR10-CR1000), 1997 - 2019.</title>
+<creator>
+   <individualName>
+     <givenName>Jennifer F</givenName>
+     <surName>Morse</surName>
+   </individualName>
+   <electronicMailAddress>jennifer.f.morse@colorado.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references an EML document that describes data used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://pasta.lternet.edu/package/metadata/eml/knb-lter-nwt/148/1</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <positionName>Information Manager</positionName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>Climate data for C1 data loggers (CR23X and CR1000), 2000 - ongoing, daily.</title>
+<creator>
+   <individualName>
+     <givenName>Jennifer F.</givenName>
+     <surName>Morse</surName>
+   </individualName>
+   <electronicMailAddress>jennifer.f.morse@colorado.edu</electronicMailAddress>
+   <userId directory="https://orcid.org">https://orcid.org/0000-0003-3207-3776</userId>
+</creator>
+<creator>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references an EML document that describes data used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://pasta.lternet.edu/package/metadata/eml/knb-lter-nwt/401/11</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <positionName>Information Manager</positionName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+   <userId directory="https://ror.org">https://ror.org/02ep77d74</userId>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>Climate data for D1 data loggers (CR23X and CR1000), 2000 - ongoing, daily.</title>
+<creator>
+   <individualName>
+     <givenName>Jennifer F.</givenName>
+     <surName>Morse</surName>
+   </individualName>
+   <electronicMailAddress>jennifer.f.morse@colorado.edu</electronicMailAddress>
+   <userId directory="https://orcid.org">https://orcid.org/0000-0003-3207-3776</userId>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Mark</givenName>
+     <surName>Losleben</surName>
+   </individualName>
+   <electronicMailAddress>losleben@email.arizona.edu</electronicMailAddress>
+</creator>
+<creator>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references an EML document that describes data used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://pasta.lternet.edu/package/metadata/eml/knb-lter-nwt/402/11</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <positionName>Information Manager</positionName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+   <userId directory="https://ror.org">https://ror.org/02ep77d74</userId>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>Climate data for saddle data loggers (CR23X and CR1000), 2000 - ongoing, daily.</title>
+<creator>
+   <individualName>
+     <givenName>Jennifer F.</givenName>
+     <surName>Morse</surName>
+   </individualName>
+   <electronicMailAddress>jennifer.f.morse@colorado.edu</electronicMailAddress>
+   <userId directory="https://orcid.org">https://orcid.org/0000-0003-3207-3776</userId>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Mark</givenName>
+     <surName>Losleben</surName>
+   </individualName>
+   <electronicMailAddress>losleben@email.arizona.edu</electronicMailAddress>
+</creator>
+<creator>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references an EML document that describes data used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://pasta.lternet.edu/package/metadata/eml/knb-lter-nwt/405/11</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <positionName>Information Manager</positionName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+   <userId directory="https://ror.org">https://ror.org/02ep77d74</userId>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>Air temperature data for C1 chart recorder, 1952 - ongoing.</title>
+<creator>
+   <individualName>
+     <givenName>Jennifer F</givenName>
+     <surName>Morse</surName>
+   </individualName>
+   <electronicMailAddress>jennifer.f.morse@colorado.edu</electronicMailAddress>
+   <userId directory="https://orcid.org">https://orcid.org/0000-0003-3207-3776</userId>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Mark</givenName>
+     <surName>Losleben</surName>
+   </individualName>
+   <electronicMailAddress>losleben@email.arizona.edu</electronicMailAddress>
+</creator>
+<creator>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references an EML document that describes data used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://pasta.lternet.edu/package/metadata/eml/knb-lter-nwt/411/18</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <positionName>Information Manager</positionName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+   <userId directory="https://ror.org">https://ror.org/02ep77d74</userId>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>Air temperature data for Saddle chart recorder, 1981 - 2017.</title>
+<creator>
+   <individualName>
+     <givenName>Jennifer F</givenName>
+     <surName>Morse</surName>
+   </individualName>
+   <electronicMailAddress>jennifer.f.morse@colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+     <givenName>Mark</givenName>
+     <surName>Losleben</surName>
+   </individualName>
+   <electronicMailAddress>losleben@email.arizona.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references an EML document that describes data used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://pasta.lternet.edu/package/metadata/eml/knb-lter-nwt/413/14</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>Niwot Ridge LTER</organizationName>
+   <positionName>Information Manager</positionName>
+   <electronicMailAddress>lternwt@colorado.edu</electronicMailAddress>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>Global Historical Climatology Network - Daily (GHCN-Daily), Version 3. Stations: USC00050183 (Allenspark 2 SE), USC00053496 (Grand Lake 1 NW), USC00053500 (Grand Lake 6 SSW), USC00055878 (Nederland 2 NNE), USW00094075 (Boulder 14 W)</title>
+<creator>
+   <individualName>
+      <givenName>Matthew J.</givenName>
+      <surName>Menne</surName>
+   </individualName>
+   <organizationName>DOC/NOAA/NESDIS/NCDC &gt; National Climatic Data Center, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Imke</givenName>
+      <surName>Durre</surName>
+   </individualName>
+   <organizationName>DOC/NOAA/NESDIS/NCDC &gt; National Climatic Data Center, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Bryant</givenName>
+      <surName>Korzeniewski</surName>
+   </individualName>
+   <organizationName>DOC/NOAA/NESDIS/NCDC &gt; National Climatic Data Center, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Shelley</givenName>
+      <surName>McNeill</surName>
+   </individualName>
+   <organizationName>DOC/NOAA/NESDIS/NCDC &gt; National Climatic Data Center, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Kristy</givenName>
+      <surName>Thomas</surName>
+   </individualName>
+   <organizationName>DOC/NOAA/NESDIS/NCDC &gt; National Climatic Data Center, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Xungang</givenName>
+      <surName>Yin</surName>
+   </individualName>
+   <organizationName>DOC/NOAA/NESDIS/NCDC &gt; National Climatic Data Center, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Steven</givenName>
+      <surName>Anthony</surName>
+   </individualName>
+   <organizationName>DOC/NOAA/NESDIS/NCDC &gt; National Climatic Data Center, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Ron</givenName>
+      <surName>Ray</surName>
+   </individualName>
+   <organizationName>DOC/NOAA/NESDIS/NCDC &gt; National Climatic Data Center, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Russell S.</givenName>
+      <surName>Vose</surName>
+   </individualName>
+   <organizationName>DOC/NOAA/NESDIS/NCDC &gt; National Climatic Data Center, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Byron E.</givenName>
+      <surName>Gleason</surName>
+   </individualName>
+   <organizationName>DOC/NOAA/NESDIS/NCDC &gt; National Climatic Data Center, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Tamara G.</givenName>
+      <surName>Houston</surName>
+   </individualName>
+   <organizationName>DOC/NOAA/NESDIS/NCDC &gt; National Climatic Data Center, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references the data source used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://doi.org/10.7289/V5D21VHZ</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>DOC/NOAA/NESDIS/NCEI &gt; National Centers for Environmental Information, NESDIS, NOAA, U.S. Department of Commerce</organizationName>
+   <positionName>GHCNd Operations Team</positionName>
+   <electronicMailAddress>ncdc.ghcnd@noaa.gov</electronicMailAddress>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>NRCS SNOTEL daily air temperature and precipitation, Colorado. Sites: High Lonesome (1187), Lake Eldora (564), Sawtooth (1251), University Camp (838)</title>
+<creator>
+   <organizationName>USDA Natural Resources Conservation Service, National Water and Climate Center</organizationName>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references the data source used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://wcc.sc.egov.usda.gov/reportGenerator/</url>
+</online>
+</distribution>
+<contact>
+   <organizationName>USDA Natural Resources Conservation Service, National Water and Climate Center</organizationName>
+   <onlineUrl>https://www.nrcs.usda.gov/wps/portal/wcc/home/</onlineUrl>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>AmeriFlux BASE US-NR1 Niwot Ridge Forest (LTER NWT1), Ver. 26-5</title>
+<creator>
+   <individualName>
+      <givenName>Peter D.</givenName>
+      <surName>Blanken</surName>
+   </individualName>
+   <organizationName>University of Colorado</organizationName>
+   <electronicMailAddress>Blanken@colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Russel K.</givenName>
+      <surName>Monson</surName>
+   </individualName>
+   <organizationName>University of Colorado</organizationName>
+   <electronicMailAddress>russell.monson@colorado.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Sean P.</givenName>
+      <surName>Burns</surName>
+   </individualName>
+   <organizationName>University of Colorado</organizationName>
+   <electronicMailAddress>sean.burns@colorado.edu</electronicMailAddress>
+   <userId directory="https://orcid.org">https://orcid.org/0000-0002-6258-1838</userId>
+</creator>
+<creator>
+   <individualName>
+      <givenName>David R.</givenName>
+      <surName>Bowling</surName>
+   </individualName>
+   <organizationName>University of Utah</organizationName>
+   <electronicMailAddress>david.bowling@utah.edu</electronicMailAddress>
+</creator>
+<creator>
+   <individualName>
+      <givenName>Andrew A.</givenName>
+      <surName>Turnipseed</surName>
+   </individualName>
+   <organizationName>University of Colorado</organizationName>
+</creator>
+<creator>
+   <individualName>
+      <givenName>John F.</givenName>
+      <surName>Knowles</surName>
+   </individualName>
+   <organizationName>Montana State University</organizationName>
+   <electronicMailAddress>john.knowles@montana.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references the data source used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://doi.org/10.17190/AMF/1246088</url>
+</online>
+</distribution>
+<contact>
+   <individualName>
+      <givenName>Peter D.</givenName>
+      <surName>Blanken</surName>
+   </individualName>
+   <organizationName>University of Colorado</organizationName>
+   <electronicMailAddress>Blanken@colorado.edu</electronicMailAddress>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>AmeriFlux BASE US-NR3 Niwot Ridge Alpine (T-Van West), Ver. 6-5</title>
+<creator>
+   <individualName>
+      <givenName>John</givenName>
+      <surName>Knowles</surName>
+   </individualName>
+   <organizationName>Montana State University</organizationName>
+   <electronicMailAddress>john.knowles@montana.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references the data source used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://doi.org/10.17190/AMF/1804491</url>
+</online>
+</distribution>
+<contact>
+   <individualName>
+      <givenName>John</givenName>
+      <surName>Knowles</surName>
+   </individualName>
+   <organizationName>Montana State University</organizationName>
+   <electronicMailAddress>john.knowles@montana.edu</electronicMailAddress>
+</contact>
+</dataSource>
+</methodStep>
+<methodStep>
+<description>
+<para>This method step describes provenance-based metadata as specified in the LTER EML Best Practices.</para>
+<para>This provenance metadata does not contain entity specific information.</para>
+</description>
+<dataSource>
+<title>AmeriFlux BASE US-NR4 Niwot Ridge Alpine (T-Van East), Ver. 6-5</title>
+<creator>
+   <individualName>
+      <givenName>John</givenName>
+      <surName>Knowles</surName>
+   </individualName>
+   <organizationName>Montana State University</organizationName>
+   <electronicMailAddress>john.knowles@montana.edu</electronicMailAddress>
+</creator>
+<distribution>
+<online>
+<onlineDescription>This online link references the data source used in the creation of this derivative data package.</onlineDescription>
+<url function="information">https://doi.org/10.17190/AMF/1804492</url>
+</online>
+</distribution>
+<contact>
+   <individualName>
+      <givenName>John</givenName>
+      <surName>Knowles</surName>
+   </individualName>
+   <organizationName>Montana State University</organizationName>
+   <electronicMailAddress>john.knowles@montana.edu</electronicMailAddress>
+</contact>
+</dataSource>
+</methodStep>
