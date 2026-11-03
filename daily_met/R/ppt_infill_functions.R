@@ -61,7 +61,7 @@ best_ln_regression <- function(dat, target_site, site_order, nobs_limit){
 
 
 # shorter-term "seasonal" infill: -31 and +30 days before and after target infill date
-tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qdayscheck = F, nobs_limit = 14){
+tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qdayscheck = F, nobs_limit = 14, reject_neg_slope = F){
   
   # initiate data frame for storing results
   infill_df_season <- data.frame()
@@ -133,7 +133,8 @@ tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qda
                                       #logger = logger, 
                                       r2 = summary(mod)$r.squared,
                                       pval = summary(mod)$coefficients[8],
-                                      nobs = nrow(mod$model))))
+                                      nobs = nrow(mod$model),
+                                      slope = coef(mod)[[2]])))
     }
     
     # make numeric cols numeric
@@ -144,6 +145,10 @@ tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qda
     # remove any row that has an r2 of 1 (unrealistic) and filter out any model nobs less than limit specified (TK has a min of 14)
     if(nrow(r2_df)>0){
       r2_df <- subset(r2_df, r2 != 1 & nobs >= nobs_limit)
+    }
+    # optionally drop negative-slope fits (more precip at the source predicting less at the target is not physical)
+    if(reject_neg_slope & nrow(r2_df)>0){
+      r2_df <- subset(r2_df, as.numeric(slope) > 0)
     }
     # if r2_df empty because no models could be run, state that in infill df and move on
     if(nrow(r2_df) == 0){
@@ -173,7 +178,7 @@ tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qda
     }
     # if there is a tie in r2, choose lowest pval (unless tie is r2==0)
     if(nrow(best) > 1 & !all(is.na(best$pval))){
-      best <- subset(best, r2 == max(r2, na.rm = T) & pval == max(pval, na.rm = T)) 
+      best <- subset(best, r2 == max(r2, na.rm = T) & pval == min(pval, na.rm = T)) 
     }
     #if best is still more than 1 row at this point (non 0 r2 and pval both tied), choose based on site order
     # would apply to tied r2 and either all pvals are NA or pvals are tied
@@ -226,7 +231,7 @@ tk_ppt_seasonalfill <- function(dat, target_site, missing_dates, site_order, qda
 
 
 # build multi-year regression, +- 3 days on each side of target infill date
-tk_ppt_historicfill <- function(dat, target_site, missing_dates, site_order, qdayscheck = F, nobs_limit = 14){
+tk_ppt_historicfill <- function(dat, target_site, missing_dates, site_order, qdayscheck = F, nobs_limit = 14, reject_neg_slope = F){
   
   # initiate data frame for storing results
   infill_df_historic <- data.frame()
@@ -304,8 +309,9 @@ tk_ppt_historicfill <- function(dat, target_site, missing_dates, site_order, qda
       wide_df[paste0(target_site, "_ln")] <- ifelse(wide_df[[target_site]]>0, log(wide_df[[target_site]]), NA)
       wide_df[paste0(site, "_ln")] <- ifelse(wide_df[[site]]>0, log(wide_df[[site]]), NA)
       
-      # check that there are days where both target site and source station have value so can run lm model
-      if(all(is.na(wide_df[[paste0(target_site, "_ln")]][!is.na(wide_df[site])]))){
+      # check that there are days where both target site and source station have logged values so can run lm model
+      # (as in tk_ppt_seasonalfill; a source with only 0s on the shared days left lm with 0 cases)
+      if(all(is.na(wide_df[[paste0(target_site, "_ln")]][!is.na(wide_df[[paste0(site, "_ln")]])]))){
         next
       }
       # run lm model and store results
@@ -314,7 +320,8 @@ tk_ppt_historicfill <- function(dat, target_site, missing_dates, site_order, qda
                      data.frame(cbind(site = site,
                                       r2 = summary(mod)$r.squared,
                                       pval = summary(mod)$coefficients[8],
-                                      nobs = nrow(mod$model))))
+                                      nobs = nrow(mod$model),
+                                      slope = coef(mod)[[2]])))
       
     }
     # make numeric cols numeric
@@ -325,6 +332,10 @@ tk_ppt_historicfill <- function(dat, target_site, missing_dates, site_order, qda
     # remove any row that has an r2 of 1 (unrealistic) and filter out any model nobs less than limit specified (TK has a min of 14)
     if(nrow(r2_df)>0){
       r2_df <- subset(r2_df, r2 != 1 & nobs >= nobs_limit)
+    }
+    # optionally drop negative-slope fits (more precip at the source predicting less at the target is not physical)
+    if(reject_neg_slope & nrow(r2_df)>0){
+      r2_df <- subset(r2_df, as.numeric(slope) > 0)
     }
     # if r2_df empty because no models could be run, state that in infill df and move on
     if(nrow(r2_df) == 0){

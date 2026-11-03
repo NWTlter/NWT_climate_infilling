@@ -170,15 +170,32 @@ fetchGHCND <- function(output_directory = getwd(),
 
 # function to determine data package version number only (not return full data package ID)
 getPackageVersion<-function(edi_id, site = "nwt"){
-  versions=readLines(paste0('https://pasta.lternet.edu/package/eml/knb-lter-', site, '/', edi_id), warn=FALSE)
-  currentV <- max(as.numeric(versions))
+  scope <- paste0("knb-lter-", site)
+  currentV <- EDIutils::list_data_package_revisions(
+    scope = scope,
+    identifier = as.numeric(edi_id),
+    filter = "newest"
+  )
   return(currentV)
 }
 
 # function to get entity ID for current data package version
 getEntityId <- function(edi_id, version, site = "nwt", datanum = 1){
-  entID <- readLines(paste0('https://pasta.lternet.edu/package/eml/knb-lter-', site, '/', edi_id, "/", version, "/"), warn=FALSE)[datanum]
-  entID <- gsub(paste0("http.*/",edi_id,"/",version,"/"), "", entID) # remove all chars except what comes after last /
+  packageId <- paste0("knb-lter-", site, ".", edi_id, ".", version)
+  entities <- EDIutils::read_data_entity_names(packageId = packageId)
+
+  if(datanum > nrow(entities)){
+    stop(
+      paste0(
+        "Requested datanum ", datanum,
+        " but package ", packageId,
+        " only has ", nrow(entities), " data entit",
+        ifelse(nrow(entities) == 1, "y", "ies"), "."
+      )
+    )
+  }
+
+  entID <- entities$entityId[datanum]
   return(entID)
 }
 
@@ -187,15 +204,15 @@ getTabular <- function(edi_id, na_vals = c("", "NA", NA, NaN, ".", "NaN", " "), 
   # https://pasta.lternet.edu/package/data/eml/knb-lter-nwt/411/17/81101917c12b63474ddef47f104b7128
   require(readr)
   v <- getPackageVersion(edi_id, site = site)
+  packageId <- paste0("knb-lter-", site, ".", edi_id, ".", v)
   id <- getEntityId(edi_id, v, site = site, datanum = datanum)
-  cat(paste0("Reading in knb-lter-", site, ".", edi_id, ".", v), '...')
-  dat <- readr::read_csv(
-    paste0("https://pasta.lternet.edu/package/data/eml/knb-lter-", 
-      site, "/", edi_id, "/", v, "/", id),
-                trim_ws =TRUE, na = na_vals, col_types = col_class,
-                guess_max = 100000, show_col_types = FALSE)
+  # read only the requested entity (downloading the whole package archive first was unused)
+  raw <- EDIutils::read_data_entity(packageId = packageId, entityId = id)
+  dat <- readr::read_csv(file = raw,
+                         trim_ws = TRUE, na = na_vals, col_types = col_class,
+                         guess_max = 100000, show_col_types = FALSE)
   dat <- as.data.frame(dat)
-  cat('Done.\n')
+  print(paste0("Reading in ", packageId))
   return(dat)
 }
 

@@ -440,7 +440,22 @@ tidytemp <- function(dat, datasource = NA, sep = "_", special = "flag", dropcol 
       print("No replicates detected; if error, review output")
     }
   }
-  
+
+  # Check if hv sensors present (new D1 sensors from Sep 2025, e.g. airtemp_hv1_max)
+  # (treat like HMPs: logger becomes cr1000_hv, rep is the sensor number)
+  hvs <- any(grepl("_hv\\d", dat_long$met))
+
+  if(hvs){
+    lastcol <- names(dat_long)[ncol(dat_long)]
+    if(!"rep" %in% names(dat_long)) dat_long$rep <- NA_character_
+    hvrep <- stringr::str_extract(dat_long$met, "_hv(\\d)", group = 1)
+    dat_long$rep <- ifelse(!is.na(hvrep), hvrep, dat_long$rep)
+    dat_long$logger <- ifelse(!is.na(hvrep), paste0(dat_long$logger, "_hv"), dat_long$logger)
+    dat_long$met <- gsub("_hv\\d", "", dat_long$met)
+    # reorg cols
+    dat_long <- subset(dat_long, select = c(1:met, rep, temp:get(lastcol)))
+  }
+
   # if desired, prefix temp and special col colname with datasource
   if(!is.na(datasource)){
     colnames(dat_long)[
